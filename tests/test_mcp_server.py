@@ -22,6 +22,7 @@ import pytest
 
 pytest.importorskip("mcp")
 
+from camt053.exceptions import Camt053Error  # noqa: E402
 from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 import camt053_mcp.server as server  # noqa: E402
@@ -131,6 +132,72 @@ def test_generate_reversal_error_is_serializable():
     out = server.generate_reversal("<not-a-statement/>", "AC04")
     payload = json.loads(out)
     assert "error" in payload
+
+
+def test_list_message_types_error_returns_error_list(monkeypatch):
+    """A failing ``list_message_types`` yields an ``{"error": ...}`` list."""
+
+    def boom():
+        raise ValueError("boom")
+
+    monkeypatch.setattr(server.services, "list_message_types", boom)
+    result = server.list_message_types()
+    assert result == [{"error": "boom"}]
+
+
+def test_list_return_reasons_error_returns_error_list(monkeypatch):
+    """A failing ``list_return_reasons`` yields an ``{"error": ...}`` list."""
+
+    def boom():
+        raise Camt053Error("boom")
+
+    monkeypatch.setattr(server.services, "list_return_reasons", boom)
+    result = server.list_return_reasons()
+    assert result == [{"error": "boom"}]
+
+
+def test_get_required_fields_unsupported_type_returns_error():
+    """An unsupported message type yields a string ``error:`` entry."""
+    result = server.get_required_fields("camt.999.001.99")
+    assert any("error" in str(item) for item in result)
+
+
+def test_validate_records_unsupported_type_returns_error():
+    """An unsupported message type yields an ``{"error": ...}`` dict."""
+    result = server.validate_records("camt.999.001.99", [{}])
+    assert isinstance(result, dict)
+    assert "error" in result
+
+
+def test_parse_statement_malformed_xml_returns_error():
+    """Malformed XML yields an ``{"error": ...}`` dict, not an exception."""
+    result = server.parse_statement("<nope/>")
+    assert isinstance(result, dict)
+    assert "error" in result
+
+
+def test_filter_entries_malformed_xml_returns_error():
+    """Malformed XML yields an ``{"error": ...}`` list, not an exception."""
+    result = server.filter_entries("<nope/>", "AC04")
+    assert isinstance(result, list)
+    assert result and "error" in result[0]
+
+
+def test_generate_reversal_no_matching_reason_returns_error(statement_xml):
+    """A reason code matching no entries yields a serialized error string."""
+    out = server.generate_reversal(statement_xml, "ZZ99")
+    payload = json.loads(out)
+    assert "error" in payload
+
+
+def test_main_runs_server(monkeypatch):
+    """``main`` invokes ``server.run`` and returns without hanging."""
+    calls = []
+    monkeypatch.setattr(
+        server.server, "run", lambda *a, **k: calls.append(True)
+    )
+    assert server.main() is None
+    assert calls == [True]
 
 
 def test_call_tool_through_fastmcp():

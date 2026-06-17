@@ -5,7 +5,7 @@
 [![PyPI Version][pypi-badge]][07]
 [![Python Versions][python-versions-badge]][07]
 [![PyPI Downloads][pypi-downloads-badge]][07]
-[![Licence][licence-badge]][01]
+[![License][license-badge]][01]
 [![Tests][tests-badge]][tests-url]
 [![Quality][quality-badge]][quality-url]
 [![Documentation][docs-badge]][docs-url]
@@ -28,8 +28,8 @@ validated reversing-entry XML, all from your favourite MCP client.
 - [Tools](#tools)
 - [Using the tools](#using-the-tools)
 - [Development](#development)
-- [Licence](#licence)
-- [Contribution](#contribution)
+- [License](#license)
+- [Contributing](#contributing)
 - [Acknowledgements](#acknowledgements)
 
 ## Overview
@@ -206,12 +206,12 @@ make lint         # ruff + black
 make type-check   # mypy --strict
 ```
 
-## Licence
+## License
 
-Licensed under the [Apache Licence, Version 2.0][01]. Any contribution submitted
+Licensed under the [Apache License, Version 2.0][01]. Any contribution submitted
 for inclusion shall be licensed as above, without additional terms.
 
-## Contribution
+## Contributing
 
 Contributions are welcome — see the [contributing instructions][04]. Thanks to
 all [contributors][05].
@@ -232,7 +232,7 @@ Built on the [`camt053`][core] ISO 20022 Bank Statement library and the
 [banner]: https://kura.pro/camt053-mcp/images/banners/banner-camt053-mcp.svg 'camt053-mcp'
 [docs-badge]: https://img.shields.io/badge/Docs-camt053.com-blue?style=for-the-badge
 [docs-url]: https://camt053.com/
-[licence-badge]: https://img.shields.io/pypi/l/camt053-mcp?style=for-the-badge
+[license-badge]: https://img.shields.io/pypi/l/camt053-mcp?style=for-the-badge
 [pypi-badge]: https://img.shields.io/pypi/v/camt053-mcp?style=for-the-badge
 [pypi-downloads-badge]: https://img.shields.io/pypi/dm/camt053-mcp.svg?style=for-the-badge
 [python-versions-badge]: https://img.shields.io/pypi/pyversions/camt053-mcp.svg?style=for-the-badge

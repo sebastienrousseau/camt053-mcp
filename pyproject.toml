@@ -40,7 +40,26 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = ["-ra", "--strict-markers", "--tb=short"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=camt053_mcp",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "pragma: no cover",
+    "if sys.platform",
+    "except Exception:",
+    "except \\(RuntimeError, OSError\\)",
+]
 
 [tool.ruff]
 line-length = 79

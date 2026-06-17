@@ -12,7 +12,7 @@ permissions:
 env:
   # The core dependency is not yet on PyPI; install it from Git, pinned to the
   # v0.0.1 commit. Switch to the PyPI release (camt053>=0.0.1) once published.
-  CAMT053_CORE: "git+https://github.com/sebastienrousseau/camt053.git@e3951cf086e68b6122eac76c7444e2bc3203cb5e"
+  CAMT053_CORE: "git+https://github.com/sebastienrousseau/camt053.git@d16ed541aa15261386735b2136a11fb56bf838b6"
 
 jobs:
   test:

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  # The core dependency is not yet on PyPI; install it from Git, pinned to the
+  # v0.0.1 commit. Switch to the PyPI release (camt053>=0.0.1) once published.
+  CAMT053_CORE: "git+https://github.com/sebastienrousseau/camt053.git@d16ed541aa15261386735b2136a11fb56bf838b6"
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install camt053 (core dependency) and this package
+        run: |
+          python -m pip install --upgrade pip
+          pip install "$CAMT053_CORE"
+          # Editable so the branch-coverage gate measures the code that runs.
+          pip install -e .
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install camt053 (core dependency) and this package
+        run: |
+          python -m pip install --upgrade pip
+          pip install "$CAMT053_CORE"
+          pip install .
+          pip install "ruff==0.1.15" "black==24.10.0" mypy
+
+      - name: Ruff check
+        run: ruff check camt053_mcp/
+
+      - name: Black check
+        run: black --check camt053_mcp/ tests/
+
+      - name: Mypy
+        run: mypy camt053_mcp/

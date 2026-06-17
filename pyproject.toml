@@ -1,0 +1,124 @@
+[tool.poetry]
+name = "camt053-mcp"
+version = "0.0.1"
+description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
+authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/sebastienrousseau/camt053-mcp"
+homepage = "https://camt053.com"
+packages = [
+    { include = "camt053_mcp" },
+]
+
+[tool.poetry.scripts]
+camt053-mcp = "camt053_mcp.server:main"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+camt053 = ">=0.0.1"
+mcp = ">=1.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=9.0.3,<10.0.0"
+pytest-cov = ">=6.0.0,<8.0.0"
+black = "^24.0.0"
+ruff = "^0.1.0"
+mypy = "^1.11.0"
+bandit = "^1.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
+target-version = ['py310']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=camt053_mcp",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "pragma: no cover",
+    "if sys.platform",
+    "except Exception:",
+    "except \\(RuntimeError, OSError\\)",
+]
+
+[tool.ruff]
+line-length = 79
+target-version = "py310"
+extend-exclude = ["*.md", "tmp_env", ".venv", ".eggs"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/conftest.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+check_untyped_defs = true
+strict_equality = true
+exclude = [
+    "tmp_env/",
+    ".venv/",
+    ".eggs/",
+]
+
+[[tool.mypy.overrides]]
+module = "mcp.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "camt053.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The tools mirror the (untyped) camt053.services facade verbatim, returning
+# bare dict/list/str. Relax the two strict checks that signature would trip
+# (generic dict/list args and Any propagated from services) while keeping the
+# rest of strict mode in force.
+module = "camt053_mcp.*"
+disallow_any_generics = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+warn_unused_ignores = false
+disable_error_code = ["arg-type", "return-value", "attr-defined", "assignment"]

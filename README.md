@@ -1,10 +1,11 @@
 # camt053-mcp: An MCP Server for ISO 20022 Bank Statements
 
-![camt053-mcp banner][banner]
+<p align="center">
+  <img src="https://cloudcdn.pro/camt053/v1/logos/camt053.svg" alt="camt053-mcp logo" width="128" />
+</p>
 
 [![PyPI Version][pypi-badge]][07]
 [![Python Versions][python-versions-badge]][07]
-[![PyPI Downloads][pypi-downloads-badge]][07]
 [![License][license-badge]][01]
 [![Tests][tests-badge]][tests-url]
 [![Quality][quality-badge]][quality-url]
@@ -246,12 +247,10 @@ Built on the [`camt053`][core] ISO 20022 Bank Statement library and the
 [lsp]: https://github.com/sebastienrousseau/camt053-lsp
 [mcp]: https://modelcontextprotocol.io
 [release-001]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.1
-[banner]: https://cloudcdn.pro/api/transform?url=/camt053/v1/logos/camt053.webp&w=128 'camt053-mcp'
 [docs-badge]: https://img.shields.io/badge/Docs-camt053.com-blue?style=for-the-badge
 [docs-url]: https://camt053.com/
 [license-badge]: https://img.shields.io/pypi/l/camt053-mcp?style=for-the-badge
 [pypi-badge]: https://img.shields.io/pypi/v/camt053-mcp?style=for-the-badge
-[pypi-downloads-badge]: https://img.shields.io/pypi/dm/camt053-mcp.svg?style=for-the-badge
 [python-versions-badge]: https://img.shields.io/pypi/pyversions/camt053-mcp.svg?style=for-the-badge
 [quality-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/camt053-mcp/ci.yml?branch=main&label=Quality&style=for-the-badge
 [quality-url]: https://github.com/sebastienrousseau/camt053-mcp/actions/workflows/ci.yml

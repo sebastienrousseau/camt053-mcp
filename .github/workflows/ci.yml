@@ -59,7 +59,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "$CAMT053_CORE"
           pip install .
-          pip install ruff black mypy
+          pip install "ruff==0.1.15" "black==24.10.0" mypy
 
       - name: Ruff check
         run: ruff check camt053_mcp/

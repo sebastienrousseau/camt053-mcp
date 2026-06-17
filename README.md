@@ -148,10 +148,27 @@ import asyncio
 
 from camt053_mcp.server import server
 
-# A camt.053 statement with one entry returned AC04 (Closed Account).
+# A complete camt.053 statement with one entry returned AC04 (Closed Account).
 statement_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.14">
-  ... your incoming statement ...
+  <BkToCstmrStmt>
+    <GrpHdr><MsgId>STMT-MSG-0001</MsgId><CreDtTm>2026-06-15T08:00:00</CreDtTm></GrpHdr>
+    <Stmt>
+      <Id>STMT-0001</Id><CreDtTm>2026-06-15T08:00:00</CreDtTm>
+      <Acct><Id><IBAN>GB29NWBK60161331926819</IBAN></Id><Ccy>EUR</Ccy></Acct>
+      <Bal><Tp><CdOrPrtry><Cd>CLBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="EUR">10000.00</Amt><CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2026-06-15</Dt></Dt></Bal>
+      <Ntry>
+        <NtryRef>NTRY-0001</NtryRef>
+        <Amt Ccy="EUR">1500.00</Amt><CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts><Cd>BOOK</Cd></Sts>
+        <NtryDtls><TxDtls>
+          <RtrInf><Rsn><Cd>AC04</Cd></Rsn></RtrInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
 </Document>"""
 
 

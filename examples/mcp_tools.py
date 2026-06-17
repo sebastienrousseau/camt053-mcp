@@ -77,10 +77,12 @@ async def main() -> None:
     )
     print(
         "filter_entries     ->",
-        (await call(
-            "filter_entries",
-            {"xml": STATEMENT_XML, "reason_code": "AC04"},
-        ))[:60],
+        (
+            await call(
+                "filter_entries",
+                {"xml": STATEMENT_XML, "reason_code": "AC04"},
+            )
+        )[:60],
         "…",
     )
     xml = await call(

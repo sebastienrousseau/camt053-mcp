@@ -48,6 +48,21 @@ def _registered_prompt_names() -> set[str]:
     }
 
 
+def _registered_resource_uris() -> set[str]:
+    """Return the URIs of every resource registered on the FastMCP server."""
+    return {
+        str(resource.uri)
+        for resource in server.server._resource_manager.list_resources()
+    }
+
+
+def _read_resource(uri: str):
+    """Read a resource through FastMCP and return its decoded JSON payload."""
+    contents = asyncio.run(server.server.read_resource(uri))
+    block = contents[0] if isinstance(contents, list | tuple) else contents
+    return json.loads(block.content)
+
+
 def _registered_tool_names() -> set[str]:
     """Return the names of every tool registered on the FastMCP server.
 
@@ -284,6 +299,51 @@ def test_generate_reversal_no_matching_reason_returns_error(statement_xml):
     out = server.generate_reversal(statement_xml, "ZZ99")
     payload = json.loads(out)
     assert "error" in payload
+
+
+def test_resources_registered():
+    """Both reference resources are registered on the server."""
+    assert _registered_resource_uris() == {
+        "camt053://return-reasons",
+        "camt053://message-types",
+    }
+
+
+def test_return_reason_resource_lists_ac04():
+    """The return-reason resource returns the catalog including AC04."""
+    payload = _read_resource("camt053://return-reasons")
+    assert isinstance(payload, list)
+    assert any(row.get("code") == "AC04" for row in payload)
+
+
+def test_message_type_resource_lists_three():
+    """The message-type resource returns the 3 supported types."""
+    payload = _read_resource("camt053://message-types")
+    assert isinstance(payload, list)
+    assert len(payload) == 3
+    assert all("message_type" in row and "name" in row for row in payload)
+
+
+def test_return_reason_resource_error_is_serializable(monkeypatch):
+    """A failing return-reason resource yields a serialized error payload."""
+
+    def boom():
+        raise Camt053Error("boom")
+
+    monkeypatch.setattr(server.services, "list_return_reasons", boom)
+    payload = _read_resource("camt053://return-reasons")
+    assert payload == {"error": "boom"}
+
+
+def test_message_type_resource_error_is_serializable(monkeypatch):
+    """A failing message-type resource yields a serialized error payload."""
+
+    def boom():
+        raise ValueError("boom")
+
+    monkeypatch.setattr(server.services, "list_message_types", boom)
+    payload = _read_resource("camt053://message-types")
+    assert payload == {"error": "boom"}
 
 
 def test_main_runs_server(monkeypatch):

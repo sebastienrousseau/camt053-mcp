@@ -283,6 +283,40 @@ def generate_reversal(xml: str, reason_code: str = "AC04") -> str:
         return json.dumps({"error": str(exc)})
 
 
+@server.resource("camt053://return-reasons")
+def return_reason_catalog() -> str:
+    """Expose the ISO external return-reason catalog as a JSON resource.
+
+    Returns the full list of ``{"code", "name"}`` return-reason dictionaries
+    (from :func:`camt053.services.list_return_reasons`) serialised as JSON, so
+    an agent can load the catalog as reference context without calling a tool.
+    On a :class:`ValueError` or
+    :class:`camt053.exceptions.Camt053Error` an ``{"error": ...}`` payload is
+    returned instead (serialised), consistent with the server's tools.
+    """
+    try:
+        return json.dumps(services.list_return_reasons())
+    except (ValueError, Camt053Error) as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@server.resource("camt053://message-types")
+def message_type_catalog() -> str:
+    """Expose the supported camt.05x message types as a JSON resource.
+
+    Returns the list of ``{"message_type", "name"}`` dictionaries (from
+    :func:`camt053.services.list_message_types`) serialised as JSON, so an agent
+    can load the supported message types as reference context without calling a
+    tool. On a :class:`ValueError` or
+    :class:`camt053.exceptions.Camt053Error` an ``{"error": ...}`` payload is
+    returned instead (serialised), consistent with the server's tools.
+    """
+    try:
+        return json.dumps(services.list_message_types())
+    except (ValueError, Camt053Error) as exc:
+        return json.dumps({"error": str(exc)})
+
+
 @server.prompt()
 def reversal_preview(
     reason_code: str = "AC04",

@@ -28,6 +28,7 @@ validated reversing-entry XML, all from your favourite MCP client.
 - [Quick Start](#quick-start)
 - [Tools](#tools)
 - [Prompts](#prompts)
+- [Resources](#resources)
 - [Using the tools](#using-the-tools)
 - [Development](#development)
 - [License](#license)
@@ -164,6 +165,24 @@ with the rest of the server's error convention.
 returns a four-step message template: parse the statement, preview the matching
 entries with `filter_entries`, confirm with the operator, then call
 `generate_reversal`.
+
+## Resources
+
+Resources give an agent read-only reference context it can load without
+calling a tool. Each resource returns a JSON payload.
+
+| Resource URI | Contents |
+|--------------|----------|
+| `camt053://return-reasons` | The ISO external return-reason catalog — a list of `{"code", "name"}` |
+| `camt053://message-types` | The supported camt.05x message types — a list of `{"message_type", "name"}` |
+
+Both back onto the shared `camt053.services` layer, so they stay in sync with
+the equivalent `list_return_reasons` / `list_message_types` tools. On an error
+they return a serialised `{"error": ...}` payload.
+
+> **Note:** A `validate_statement` MCP tool is **deferred** to a later release —
+> it depends on a core `camt053.services.validate_statement` API that ships with
+> `camt053` 0.0.2.
 
 ## Using the tools
 

@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `AC04`) four-step template guiding an agent to parse the statement, preview
   the matching entries via `filter_entries`, confirm, then call
   `generate_reversal` (#4)
+- MCP resources giving agents read-only reference context (#3):
+  - `camt053://return-reasons` — the ISO external return-reason catalog
+    (`{"code", "name"}` list, from `services.list_return_reasons`)
+  - `camt053://message-types` — the supported camt.05x message types
+    (`{"message_type", "name"}` list, from `services.list_message_types`)
+
+### Deferred
+
+- `validate_statement` MCP tool (#3) — deferred to a later release because it
+  depends on a `camt053.services.validate_statement` core API that ships with
+  `camt053` 0.0.2 (not yet released)
 
 [0.0.2]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.2
 

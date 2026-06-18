@@ -35,9 +35,17 @@ EXPECTED_TOOLS = {
     "validate_records",
     "validate_identifier",
     "parse_statement",
+    "list_entries",
     "filter_entries",
     "generate_reversal",
 }
+
+
+def _registered_prompt_names() -> set[str]:
+    """Return the names of every prompt registered on the FastMCP server."""
+    return {
+        prompt.name for prompt in server.server._prompt_manager.list_prompts()
+    }
 
 
 def _registered_tool_names() -> set[str]:
@@ -60,7 +68,7 @@ def test_server_and_main_are_well_formed():
 
 
 def test_all_tools_registered():
-    """All nine tools are registered on the server."""
+    """All ten tools are registered on the server."""
     assert _registered_tool_names() == EXPECTED_TOOLS
 
 
@@ -181,6 +189,94 @@ def test_filter_entries_malformed_xml_returns_error():
     result = server.filter_entries("<nope/>", "AC04")
     assert isinstance(result, list)
     assert result and "error" in result[0]
+
+
+def test_list_entries_returns_all_by_default(statement_xml):
+    """``list_entries`` returns every entry as a plain list by default."""
+    result = server.list_entries(statement_xml)
+    assert isinstance(result, list)
+    assert len(result) == 3
+
+
+def test_list_entries_malformed_xml_returns_error():
+    """Malformed XML yields an ``{"error": ...}`` list, not an exception."""
+    result = server.list_entries("<nope/>")
+    assert isinstance(result, list)
+    assert result and "error" in result[0]
+
+
+def test_list_entries_paginated_envelope(statement_xml):
+    """A ``limit`` returns a paginated envelope with a sliced page."""
+    result = server.list_entries(statement_xml, offset=1, limit=1)
+    assert result["total"] == 3
+    assert result["offset"] == 1
+    assert result["limit"] == 1
+    assert len(result["entries"]) == 1
+
+
+def test_filter_entries_default_unchanged(statement_xml):
+    """Without a ``limit``, ``filter_entries`` returns the full list."""
+    result = server.filter_entries(statement_xml, "AC04")
+    assert isinstance(result, list)
+    assert len(result) == 1
+
+
+def test_filter_entries_paginated_envelope(statement_xml):
+    """A ``limit`` returns a paginated envelope around the matches."""
+    result = server.filter_entries(statement_xml, "AC04", offset=0, limit=5)
+    assert result == {
+        "total": 1,
+        "offset": 0,
+        "limit": 5,
+        "entries": result["entries"],
+    }
+    assert len(result["entries"]) == 1
+
+
+def test_filter_entries_offset_past_end_returns_empty_page(statement_xml):
+    """An offset beyond the result count yields an empty page (total kept)."""
+    result = server.filter_entries(statement_xml, "AC04", offset=10, limit=5)
+    assert result["total"] == 1
+    assert result["entries"] == []
+
+
+def test_pagination_negative_offset_returns_error(statement_xml):
+    """A negative offset yields an ``{"error": ...}`` payload."""
+    result = server.filter_entries(statement_xml, "AC04", offset=-1, limit=1)
+    assert isinstance(result, dict)
+    assert "error" in result
+
+
+def test_pagination_negative_limit_returns_error(statement_xml):
+    """A negative limit yields an ``{"error": ...}`` payload."""
+    result = server.list_entries(statement_xml, offset=0, limit=-1)
+    assert isinstance(result, dict)
+    assert "error" in result
+
+
+def test_reversal_preview_prompt_registered():
+    """The ``reversal_preview`` prompt is registered on the server."""
+    assert "reversal_preview" in _registered_prompt_names()
+
+
+def test_reversal_preview_prompt_renders_default_reason(statement_xml):
+    """The prompt renders a guided template defaulting to AC04."""
+    result = asyncio.run(server.server.get_prompt("reversal_preview", {}))
+    texts = [m.content.text for m in result.messages]
+    assert len(result.messages) == 2
+    assert any("AC04" in text for text in texts)
+    assert any("filter_entries" in text for text in texts)
+    assert any("generate_reversal" in text for text in texts)
+
+
+def test_reversal_preview_prompt_parameterised_reason():
+    """The prompt threads the supplied reason code into its guidance."""
+    result = asyncio.run(
+        server.server.get_prompt("reversal_preview", {"reason_code": "AC06"})
+    )
+    texts = " ".join(m.content.text for m in result.messages)
+    assert "AC06" in texts
+    assert "AC04" not in texts
 
 
 def test_generate_reversal_no_matching_reason_returns_error(statement_xml):

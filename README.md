@@ -27,6 +27,8 @@ validated reversing-entry XML, all from your favourite MCP client.
 - [Install](#install)
 - [Quick Start](#quick-start)
 - [Tools](#tools)
+- [Prompts](#prompts)
+- [Resources](#resources)
 - [Using the tools](#using-the-tools)
 - [Development](#development)
 - [License](#license)
@@ -135,8 +137,52 @@ identically to the CLI and REST API.
 | `validate_records` | Validate flat records against a message type |
 | `validate_identifier` | Validate an IBAN, BIC, or LEI |
 | `parse_statement` | Parse an incoming camt.05x statement into data |
-| `filter_entries` | Return entries carrying a return reason code |
+| `list_entries` | List every entry across all statements (paginated) |
+| `filter_entries` | Return entries carrying a return reason code (paginated) |
 | `generate_reversal` | Generate a validated reversing-entry XML document |
+
+### Pagination
+
+`list_entries` and `filter_entries` accept optional `offset` (default `0`) and
+`limit` (default `None`) parameters. When `limit` is omitted they return the
+full list, exactly as before. When `limit` is given they return a paginated
+envelope instead:
+
+```json
+{"total": 42, "offset": 10, "limit": 5, "entries": [/* ... */]}
+```
+
+A negative `offset` or `limit` returns an `{"error": ...}` payload, consistent
+with the rest of the server's error convention.
+
+## Prompts
+
+| Prompt | Purpose |
+|--------|---------|
+| `reversal_preview` | Guide an agent through a safe, confirm-before-generate reversal workflow |
+
+`reversal_preview` takes an optional `reason_code` (default `"AC04"`) and
+returns a four-step message template: parse the statement, preview the matching
+entries with `filter_entries`, confirm with the operator, then call
+`generate_reversal`.
+
+## Resources
+
+Resources give an agent read-only reference context it can load without
+calling a tool. Each resource returns a JSON payload.
+
+| Resource URI | Contents |
+|--------------|----------|
+| `camt053://return-reasons` | The ISO external return-reason catalog — a list of `{"code", "name"}` |
+| `camt053://message-types` | The supported camt.05x message types — a list of `{"message_type", "name"}` |
+
+Both back onto the shared `camt053.services` layer, so they stay in sync with
+the equivalent `list_return_reasons` / `list_message_types` tools. On an error
+they return a serialised `{"error": ...}` payload.
+
+> **Note:** A `validate_statement` MCP tool is **deferred** to a later release —
+> it depends on a core `camt053.services.validate_statement` API that ships with
+> `camt053` 0.0.2.
 
 ## Using the tools
 
@@ -183,6 +229,12 @@ async def main() -> None:
     print(await call("validate_identifier",
                      {"kind": "bic", "value": "NWBKGB2LXXX"}))
     # -> {"kind": "bic", "value": "NWBKGB2LXXX", "valid": true}
+
+    # Page through the matching entries (paginated envelope).
+    print(await call("filter_entries",
+                     {"xml": statement_xml, "reason_code": "AC04",
+                      "offset": 0, "limit": 5}))
+    # -> {"total": 1, "offset": 0, "limit": 5, "entries": [...]}
 
     # Generate a validated reversing-entry document for the AC04 entries.
     xml = await call("generate_reversal",

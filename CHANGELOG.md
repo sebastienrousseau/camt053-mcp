@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.2] - 2026-06-18
+
+### Added
+
+- `list_entries` MCP tool — list every entry across all of a statement's
+  statements (#4)
+- Optional `offset` / `limit` pagination on `list_entries` and `filter_entries`:
+  when `limit` is given the tools return a `{"total", "offset", "limit",
+  "entries"}` envelope; when omitted they return the full list unchanged, so
+  existing callers are unaffected. A negative `offset` or `limit` returns an
+  `{"error": ...}` payload (#4)
+- `reversal_preview` FastMCP prompt — a parameterised (`reason_code`, default
+  `AC04`) four-step template guiding an agent to parse the statement, preview
+  the matching entries via `filter_entries`, confirm, then call
+  `generate_reversal` (#4)
+- MCP resources giving agents read-only reference context (#3):
+  - `camt053://return-reasons` — the ISO external return-reason catalog
+    (`{"code", "name"}` list, from `services.list_return_reasons`)
+  - `camt053://message-types` — the supported camt.05x message types
+    (`{"message_type", "name"}` list, from `services.list_message_types`)
+
+### Deferred
+
+- `validate_statement` MCP tool (#3) — deferred to a later release because it
+  depends on a `camt053.services.validate_statement` core API that ships with
+  `camt053` 0.0.2 (not yet released)
+
+[0.0.2]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.2
+
 ## [0.0.1] - 2026-06-16
 
 ### Added

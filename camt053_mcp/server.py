@@ -55,12 +55,48 @@ The server communicates over stdio (FastMCP's default transport).
 """
 
 import json
+from typing import Any
 
 from camt053 import services
 from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 
 server = FastMCP("camt053")
+
+
+def _paginate(
+    entries: list[dict],
+    offset: int,
+    limit: int | None,
+) -> list[dict] | dict[str, Any]:
+    """Apply optional pagination to a list of entry dicts.
+
+    When ``limit`` is ``None`` the full ``entries`` list is returned unchanged,
+    preserving the behaviour expected by existing callers. Otherwise a
+    paginated envelope ``{"total", "offset", "limit", "entries"}`` is returned,
+    where ``entries`` is the ``offset:offset + limit`` slice.
+
+    A negative ``offset`` or a negative ``limit`` yields an ``{"error": ...}``
+    payload, consistent with the module's error convention.
+
+    Args:
+        entries: The full list of entry dicts to paginate.
+        offset: The zero-based index of the first entry to return.
+        limit: The maximum number of entries to return, or ``None`` for all.
+    """
+    if offset < 0:
+        return {"error": "offset must be non-negative"}
+    if limit is not None and limit < 0:
+        return {"error": "limit must be non-negative"}
+    if limit is None:
+        return entries
+    return {
+        "total": len(entries),
+        "offset": offset,
+        "limit": limit,
+        "entries": entries[offset : offset + limit],
+    }
 
 
 @server.tool()
@@ -166,18 +202,63 @@ def parse_statement(xml: str) -> dict:
 
 
 @server.tool()
-def filter_entries(xml: str, reason_code: str = "AC04") -> list[dict]:
+def list_entries(
+    xml: str,
+    offset: int = 0,
+    limit: int | None = None,
+) -> list[dict] | dict[str, Any]:
+    """Return every statement entry across all of a statement's statements.
+
+    When ``limit`` is ``None`` (the default) the full list of entries is
+    returned. When ``limit`` is given, a paginated envelope ``{"total",
+    "offset", "limit", "entries"}`` is returned instead, exposing the
+    ``offset:offset + limit`` slice. A negative ``offset`` or ``limit`` yields
+    an ``{"error": ...}`` payload.
+
+    Args:
+        xml: The raw statement XML as a string.
+        offset: The zero-based index of the first entry to return (paginated
+            mode only; default ``0``).
+        limit: The maximum number of entries to return, or ``None`` for the
+            full list (default ``None``).
+    """
+    try:
+        entries = services.list_entries(xml)
+    except (ValueError, Camt053Error) as exc:
+        return [{"error": str(exc)}]
+    return _paginate(entries, offset, limit)
+
+
+@server.tool()
+def filter_entries(
+    xml: str,
+    reason_code: str = "AC04",
+    offset: int = 0,
+    limit: int | None = None,
+) -> list[dict] | dict[str, Any]:
     """Return the statement entries carrying a given return reason code.
+
+    When ``limit`` is ``None`` (the default) the full list of matching entries
+    is returned, preserving the behaviour expected by existing callers. When
+    ``limit`` is given, a paginated envelope ``{"total", "offset", "limit",
+    "entries"}`` is returned instead, exposing the ``offset:offset + limit``
+    slice. A negative ``offset`` or ``limit`` yields an ``{"error": ...}``
+    payload.
 
     Args:
         xml: The raw statement XML as a string.
         reason_code: The ISO external return reason to match (default
             ``"AC04"`` Closed Account).
+        offset: The zero-based index of the first entry to return (paginated
+            mode only; default ``0``).
+        limit: The maximum number of entries to return, or ``None`` for the
+            full list (default ``None``).
     """
     try:
-        return services.filter_entries(xml, reason_code)
+        entries = services.filter_entries(xml, reason_code)
     except (ValueError, Camt053Error) as exc:
         return [{"error": str(exc)}]
+    return _paginate(entries, offset, limit)
 
 
 @server.tool()
@@ -200,6 +281,82 @@ def generate_reversal(xml: str, reason_code: str = "AC04") -> str:
         return services.generate_reversal(xml, reason_code)
     except (ValueError, Camt053Error) as exc:
         return json.dumps({"error": str(exc)})
+
+
+@server.resource("camt053://return-reasons")
+def return_reason_catalog() -> str:
+    """Expose the ISO external return-reason catalog as a JSON resource.
+
+    Returns the full list of ``{"code", "name"}`` return-reason dictionaries
+    (from :func:`camt053.services.list_return_reasons`) serialised as JSON, so
+    an agent can load the catalog as reference context without calling a tool.
+    On a :class:`ValueError` or
+    :class:`camt053.exceptions.Camt053Error` an ``{"error": ...}`` payload is
+    returned instead (serialised), consistent with the server's tools.
+    """
+    try:
+        return json.dumps(services.list_return_reasons())
+    except (ValueError, Camt053Error) as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@server.resource("camt053://message-types")
+def message_type_catalog() -> str:
+    """Expose the supported camt.05x message types as a JSON resource.
+
+    Returns the list of ``{"message_type", "name"}`` dictionaries (from
+    :func:`camt053.services.list_message_types`) serialised as JSON, so an agent
+    can load the supported message types as reference context without calling a
+    tool. On a :class:`ValueError` or
+    :class:`camt053.exceptions.Camt053Error` an ``{"error": ...}`` payload is
+    returned instead (serialised), consistent with the server's tools.
+    """
+    try:
+        return json.dumps(services.list_message_types())
+    except (ValueError, Camt053Error) as exc:
+        return json.dumps({"error": str(exc)})
+
+
+@server.prompt()
+def reversal_preview(
+    reason_code: str = "AC04",
+) -> list[UserMessage | AssistantMessage]:
+    """Guide an agent through previewing and confirming a reversal.
+
+    Returns a multi-step message template that walks an agent through the
+    headline reversal workflow for a given return reason code: parse the
+    statement, preview the entries that would be reversed via
+    ``filter_entries``, confirm with the operator, then call
+    ``generate_reversal``. The flow is parameterised by ``reason_code`` so the
+    same guidance can target any ISO external return reason.
+
+    Args:
+        reason_code: The ISO external return reason to preview (default
+            ``"AC04"`` Closed Account).
+    """
+    return [
+        UserMessage(
+            "I want to reverse the entries in a camt.053 statement that "
+            f"carry the return reason code {reason_code}. Walk me through it "
+            "safely, one step at a time, and wait for my confirmation before "
+            "generating anything."
+        ),
+        AssistantMessage(
+            "We'll do this in four steps:\n"
+            "1. Parse the statement: call `parse_statement` with the raw "
+            "statement XML so we can see its structure.\n"
+            f"2. Preview the reversals: call `filter_entries` with that XML "
+            f'and reason_code="{reason_code}" to list exactly which entries '
+            "would be reversed. For a large statement, pass `limit` (and "
+            "`offset`) to page through the matches.\n"
+            "3. Confirm: review the previewed entries together and explicitly "
+            "confirm the reversal is correct before proceeding.\n"
+            f"4. Generate: once confirmed, call `generate_reversal` with the "
+            f'same XML and reason_code="{reason_code}" to emit the validated '
+            "camt.053.001.14 reversal document.\n"
+            "Please share the statement XML and we'll start at step 1."
+        ),
+    ]
 
 
 def main() -> None:

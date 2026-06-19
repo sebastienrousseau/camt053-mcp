@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.4"
+version = "0.0.5"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/sebastienrousseau/camt053-mcp"
-homepage = "https://camt053.com"
+homepage = "https://sebastienrousseau.github.io/camt053/"
 packages = [
     { include = "camt053_mcp" },
 ]

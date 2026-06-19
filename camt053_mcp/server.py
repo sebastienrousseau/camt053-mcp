@@ -202,6 +202,28 @@ def parse_statement(xml: str) -> dict:
 
 
 @server.tool()
+def validate_statement(xml: str) -> dict:
+    """Validate an incoming camt.05x statement against its XSD schema.
+
+    Detects the document's message type, validates it against the matching
+    ISO 20022 schema, and returns a report ``{"valid": bool, "message_type":
+    str, "errors": [...]}``. A well-formed but schema-invalid document yields
+    ``valid=False`` with a populated ``errors`` list (and the detected
+    ``message_type``); a valid one yields ``valid=True`` with no errors.
+
+    Returns an ``{"error": ...}`` payload instead if the XML cannot be parsed
+    (e.g. it is malformed or is not a camt ``Document``).
+
+    Args:
+        xml: The raw statement XML as a string.
+    """
+    try:
+        return services.validate_statement(xml)
+    except (ValueError, Camt053Error) as exc:
+        return {"error": str(exc)}
+
+
+@server.tool()
 def list_entries(
     xml: str,
     offset: int = 0,

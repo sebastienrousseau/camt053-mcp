@@ -136,6 +136,7 @@ identically to the CLI and REST API.
 | `get_input_schema` | Full input JSON Schema for a message type |
 | `validate_records` | Validate flat records against a message type |
 | `validate_identifier` | Validate an IBAN, BIC, or LEI |
+| `validate_statement` | Validate a statement against its XSD and detect its type |
 | `parse_statement` | Parse an incoming camt.05x statement into data |
 | `list_entries` | List every entry across all statements (paginated) |
 | `filter_entries` | Return entries carrying a return reason code (paginated) |

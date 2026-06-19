@@ -34,6 +34,7 @@ EXPECTED_TOOLS = {
     "get_input_schema",
     "validate_records",
     "validate_identifier",
+    "validate_statement",
     "parse_statement",
     "list_entries",
     "filter_entries",
@@ -83,7 +84,7 @@ def test_server_and_main_are_well_formed():
 
 
 def test_all_tools_registered():
-    """All ten tools are registered on the server."""
+    """All eleven tools are registered on the server."""
     assert _registered_tool_names() == EXPECTED_TOOLS
 
 
@@ -122,6 +123,38 @@ def test_parse_statement_returns_data(statement_xml):
     result = server.parse_statement(statement_xml)
     assert isinstance(result, dict)
     assert "error" not in result
+
+
+def test_validate_statement_detects_message_type(statement_xml):
+    """Validation detects the document's camt message type."""
+    result = server.validate_statement(statement_xml)
+    assert isinstance(result, dict)
+    assert result["message_type"] == "camt.053.001.14"
+    assert "valid" in result
+    assert isinstance(result["errors"], list)
+
+
+def test_validate_statement_invalid_reports_errors(statement_xml):
+    """A schema-invalid document yields ``valid=False`` with errors."""
+    result = server.validate_statement(statement_xml)
+    assert result["valid"] is False
+    assert result["errors"]
+
+
+def test_validate_statement_valid_document(statement_xml):
+    """A schema-valid reversal validates as ``valid=True`` with no errors."""
+    reversal = server.generate_reversal(statement_xml, "AC04")
+    result = server.validate_statement(reversal)
+    assert result["valid"] is True
+    assert result["message_type"] == "camt.053.001.14"
+    assert result["errors"] == []
+
+
+def test_validate_statement_malformed_xml_returns_error():
+    """Malformed XML yields an ``{"error": ...}`` dict, not an exception."""
+    result = server.validate_statement("<nope/>")
+    assert isinstance(result, dict)
+    assert "error" in result
 
 
 def test_filter_entries_finds_ac04(statement_xml):

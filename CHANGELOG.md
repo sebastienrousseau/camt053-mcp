@@ -5,13 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.5] - 2026-06-19
 
 ### Added
 
 - `validate_statement` MCP tool that validates an incoming camt.05x statement
   against its XSD schema and reports `{"valid", "message_type", "errors"}`,
   delegating to `camt053.services.validate_statement` (#3)
+
+### Fixed
+
+- Repointed the broken `https://camt053.com` links (website link and docs
+  badge/URL) and the `pyproject.toml` `homepage` to the GitHub Pages site
+  `https://sebastienrousseau.github.io/camt053/` (#4)
 
 ## [0.0.4] - 2026-06-19
 
@@ -38,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a version-consistency test that parses `version` out of `pyproject.toml`
   and asserts it equals `camt053_mcp.__version__`, guarding against future drift.
 
+[0.0.5]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.5
 [0.0.4]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.4
 [0.0.3]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.3
 

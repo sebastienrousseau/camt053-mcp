@@ -9,6 +9,7 @@ build/
 
 # Virtual environments
 .venv/
+.v/
 .wtvenv/
 venv/
 env/

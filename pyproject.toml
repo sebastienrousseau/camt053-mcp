@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.2"
+version = "0.0.3"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0"
@@ -22,7 +22,7 @@ mcp = ">=1.2"
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9.0.3,<10.0.0"
 pytest-cov = ">=6.0.0,<8.0.0"
-black = "^24.0.0"
+black = "^26.3.1"
 ruff = "^0.1.0"
 mypy = "^1.11.0"
 bandit = "^1.7.0"

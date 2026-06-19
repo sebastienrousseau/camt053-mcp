@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Security policy (`SECURITY.md`) documenting supported versions, private
+  vulnerability reporting via GitHub Security Advisories, the response timeline,
+  and the scope of the camt053-mcp server
+- Dependabot configuration covering the `pip` and `github-actions` ecosystems,
+  with weekly grouped updates
+- Weekly CodeQL scanning workflow (`security-and-quality` queries) running on
+  push, pull request, and a Monday schedule
+- Bandit security-scan CI job (`Security Scan`) running `bandit -r camt053_mcp/`
+- GitHub issue templates (bug report and feature request) and a pull-request
+  template
+- A `CODEOWNERS` file assigning default review ownership
+
 ## [0.0.3] - 2026-06-19
 
 ### Fixed
@@ -14,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a version-consistency test that parses `version` out of `pyproject.toml`
   and asserts it equals `camt053_mcp.__version__`, guarding against future drift.
 
+[Unreleased]: https://github.com/sebastienrousseau/camt053-mcp/compare/v0.0.3...main
 [0.0.3]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.3
 
 ## [0.0.2] - 2026-06-18

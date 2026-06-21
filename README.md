@@ -11,6 +11,8 @@
 [![Quality][quality-badge]][quality-url]
 [![Documentation][docs-badge]][docs-url]
 
+<a href="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp"><img src="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp/badges/score.svg" alt="Glama MCP server score" /></a>
+
 **A [Model Context Protocol][mcp] server that exposes the [`camt053`][core]
 ISO 20022 Bank Statement library as tools for AI agents and assistants** —
 discover message types and return reasons, inspect input schemas, validate

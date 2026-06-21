@@ -35,6 +35,8 @@ EXPECTED_TOOLS = {
     "validate_records",
     "validate_identifier",
     "validate_statement",
+    "check_cbpr_readiness",
+    "get_cbpr_cutover_date",
     "parse_statement",
     "list_entries",
     "filter_entries",
@@ -84,7 +86,7 @@ def test_server_and_main_are_well_formed():
 
 
 def test_all_tools_registered():
-    """All eleven tools are registered on the server."""
+    """All thirteen tools are registered on the server."""
     assert _registered_tool_names() == EXPECTED_TOOLS
 
 
@@ -406,3 +408,60 @@ def test_call_tool_through_fastmcp():
 
     payload = asyncio.run(go())
     assert payload["valid"] is True
+
+
+# ─── CBPR+ readiness tool (Nov 14-16 2026 cliff) ────────────────────────────
+
+_V08_CLEAN = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+    '<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">'
+    "<BkToCstmrStmt><GrpHdr><MsgId>M</MsgId>"
+    "<CreDtTm>2026-06-21T10:00:00</CreDtTm></GrpHdr>"
+    "<Stmt><Id>S</Id>"
+    "<Acct><Id><IBAN>DE89370400440532013000</IBAN></Id></Acct>"
+    "</Stmt></BkToCstmrStmt></Document>"
+)
+
+_V08_UNSTRUCTURED_ADDRESS = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+    '<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">'
+    "<BkToCstmrStmt><GrpHdr><MsgId>M</MsgId>"
+    "<CreDtTm>2026-06-21T10:00:00</CreDtTm></GrpHdr>"
+    "<Stmt><Id>S</Id>"
+    "<Acct><Id><IBAN>DE89370400440532013000</IBAN></Id></Acct>"
+    "<Ntry><NtryDtls><TxDtls><RltdPties><Cdtr>"
+    "<PstlAdr><AdrLine>Line only</AdrLine></PstlAdr>"
+    "</Cdtr></RltdPties></TxDtls></NtryDtls></Ntry>"
+    "</Stmt></BkToCstmrStmt></Document>"
+)
+
+
+def test_check_cbpr_readiness_clean_v08_returns_ready_report():
+    """A clean v08 payload returns cbpr_ready=True with no error issues."""
+    result = server.check_cbpr_readiness(_V08_CLEAN)
+    assert result["cbpr_ready"] is True
+    assert result["schema_version"] == "camt.053.001.08"
+    assert result["cutover_date"] == "2026-11-16"
+    assert all(issue["severity"] != "error" for issue in result["issues"])
+
+
+def test_check_cbpr_readiness_unstructured_address_fails():
+    """An AdrLine without TwnNm + Ctry trips cbpr_ready=False."""
+    result = server.check_cbpr_readiness(_V08_UNSTRUCTURED_ADDRESS)
+    assert result["cbpr_ready"] is False
+    assert result["summary"]["unstructured_only"] == 1
+    codes = [issue["code"] for issue in result["issues"]]
+    assert "UNSTRUCTURED_ONLY_ADDRESS" in codes
+
+
+def test_check_cbpr_readiness_malformed_xml_returns_error_envelope():
+    """Malformed XML surfaces as an {"error": ...} dict, not an exception."""
+    result = server.check_cbpr_readiness("<Document>unclosed")
+    assert "error" in result
+    assert "well-formed" in result["error"].lower()
+
+
+def test_get_cbpr_cutover_date_returns_iso_date():
+    """The cutover-date tool returns the canonical Nov 2026 date."""
+    result = server.get_cbpr_cutover_date()
+    assert result == {"cutover_date": "2026-11-16"}

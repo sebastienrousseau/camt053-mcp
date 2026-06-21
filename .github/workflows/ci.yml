@@ -26,11 +26,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install this package (camt053 resolves from PyPI)
+      - name: Install this package (camt053 from main pending v0.0.6 release)
         run: |
           python -m pip install --upgrade pip
-          # Editable so the branch-coverage gate measures the code that runs;
-          # the camt053 dependency is pulled from PyPI.
+          # While the v0.0.6 batch is in flight, install camt053 from
+          # main so the check_cbpr_readiness function (and other v0.0.6
+          # additions) are available to this MCP wrapper. This block
+          # reduces to a single ``pip install -e .`` line once camt053
+          # v0.0.6 ships to PyPI.
+          pip install "camt053 @ git+https://github.com/sebastienrousseau/camt053@main"
           pip install -e .
           pip install pytest pytest-cov
 
@@ -49,9 +53,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install this package (camt053 resolves from PyPI)
+      - name: Install this package (camt053 from main pending v0.0.6 release)
         run: |
           python -m pip install --upgrade pip
+          # Same fallback as the test job — see comment there.
+          pip install "camt053 @ git+https://github.com/sebastienrousseau/camt053@main"
           pip install .
           pip install "ruff==0.1.15" "black==26.5.1" mypy
 

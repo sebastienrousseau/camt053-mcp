@@ -32,7 +32,11 @@ validated reversing-entry XML, all from your favourite MCP client.
 - [Prompts](#prompts)
 - [Resources](#resources)
 - [Using the tools](#using-the-tools)
+- [The camt053 suite](#the-camt053-suite)
+- [When not to use camt053-mcp](#when-not-to-use-camt053-mcp)
 - [Development](#development)
+- [Security](#security)
+- [Documentation](#documentation)
 - [License](#license)
 - [Contributing](#contributing)
 - [Acknowledgements](#acknowledgements)
@@ -254,6 +258,44 @@ Run it directly:
 python examples/mcp_tools.py
 ```
 
+## The camt053 suite
+
+`camt053-mcp` is part of a set of independently installable packages
+built around the [`camt053`][core] library — pick whichever ones
+your stack needs:
+
+| Package | Role |
+| :--- | :--- |
+| [`camt053`](https://pypi.org/project/camt053/) | Core library + CLI + FastAPI REST API |
+| [`camt053-mcp`](https://pypi.org/project/camt053-mcp/) | **Model Context Protocol server (this package)** |
+| [`camt053-lsp`](https://pypi.org/project/camt053-lsp/) | Language Server Protocol server (for editors) |
+| [`camt053-writer-xlsx`](https://pypi.org/project/camt053-writer-xlsx/) | Excel `.xlsx` writer for parsed statements |
+| [`camt053-loader-mt940`](https://pypi.org/project/camt053-loader-mt940/) | SWIFT MT940 → camt.053 loader |
+
+Every tool here is a thin typed wrapper over `camt053.services` —
+the same facade the CLI, REST API, and LSP use — so all four
+interfaces behave identically.
+
+## When not to use camt053-mcp
+
+- **You have no MCP client.** This server only makes sense paired
+  with an MCP-aware host (Claude Desktop, the IDE plugins, an agent
+  framework). For scripted / CI use, the camt053 CLI and REST API
+  cover the same ground without the stdio protocol overhead.
+- **You need to run as a long-lived daemon.** This server speaks MCP
+  stdio: an MCP client launches it as a subprocess, sends JSON-RPC
+  over stdin / stdout, and shuts it down. A persistent worker is not
+  the right pattern.
+- **You need streaming responses.** Tool calls return whole values,
+  not streams. Large statements are paginated through the existing
+  `list_entries(xml, offset, limit)` envelope, not chunked over
+  multiple responses.
+- **You need authentication.** This server has no auth; it is
+  designed to run as a local subprocess inside an MCP client.
+  Multi-tenant / network deployments need a proxy layer in front.
+- **You need to *generate* pain.001 outbound payment files.** Out of
+  scope; use [`pain001-mcp`](https://github.com/sebastienrousseau/pain001-mcp).
+
 ## Development
 
 **camt053-mcp** uses [Poetry](https://python-poetry.org/) and
@@ -278,6 +320,29 @@ make test         # pytest
 make lint         # ruff + black
 make type-check   # mypy --strict
 ```
+
+## Security
+
+`camt053-mcp` is a thin wrapper — every tool delegates to
+`camt053.services`, where the defence-in-depth (defusedxml +
+`xml_guard` byte cap + DOCTYPE / ENTITY pre-flight) lives. Tools
+catch `(ValueError, Camt053Error)` and return an `{"error": ...}`
+envelope per the suite convention; they never propagate raw
+exceptions to the MCP client. Reporting practice, supported
+versions, and the full supply-chain posture are documented in
+[`SECURITY.md`](SECURITY.md). Vulnerabilities go via GitHub Private
+Vulnerability Reporting, not public issues.
+
+## Documentation
+
+- [`README.md`](README.md) — this file
+- [`CHANGELOG.md`](CHANGELOG.md) — release notes
+- [`SECURITY.md`](SECURITY.md) — disclosure + supported versions
+- [`SUPPORT.md`](SUPPORT.md) — how to get help
+- [`MAINTAINERS.md`](MAINTAINERS.md) — who can merge
+- [`examples/`](examples/) — runnable scripts
+- [`glama.json`](glama.json) — Glama directory manifest
+- Glama listing: <https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp>
 
 ## License
 

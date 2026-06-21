@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`check_cbpr_readiness` MCP tool** that wraps
+  `camt053.compliance.check_cbpr_readiness` and reports whether an
+  incoming camt.05x statement will pass the coordinated CBPR+ /
+  Fedwire / CHAPS / T2 cutover on **14-16 November 2026**. Detects
+  unstructured-only postal addresses (`AdrLine` without `TwnNm` +
+  `Ctry`, the Nov 2026 reject case) and schema-version drift (.02-.07
+  deprecated; .08 / .13 current). Returns a structured report with
+  `cbpr_ready: bool`, per-issue XPath-style paths, severities, stable
+  codes, and an address-classification summary.
+- **`get_cbpr_cutover_date` MCP tool** returning the canonical
+  cutover date (`2026-11-16`) so agents can quote it directly without
+  having to call a readiness check first.
+
+Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
+[#17](https://github.com/sebastienrousseau/camt053-mcp/issues/17).
+
 ## [0.0.5] - 2026-06-19
 
 ### Added

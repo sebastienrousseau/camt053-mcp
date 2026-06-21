@@ -62,7 +62,13 @@ from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 
+from camt053_mcp import __version__
+
 server = FastMCP("camt053")
+# FastMCP does not expose a version kwarg; without this override the
+# MCP SDK's own version leaks into serverInfo.version, breaking
+# manifest/runtime coherence checks (e.g. Glama scoring).
+server._mcp_server.version = __version__
 
 
 def _paginate(

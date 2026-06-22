@@ -151,6 +151,8 @@ identically to the CLI and REST API.
 | `get_cbpr_cutover_date` | Return the official CBPR+ cutover date (2026-11-16) |
 | `cite_rulebook` | Quote a curated SEPA / CBPR+ / HVPS+ rulebook clause |
 | `list_rulebook_clauses` | List the available rulebook citations (optionally filtered) |
+| `export_journal` | Export statement entries as Xero `BankTransactions` or QBO `JournalEntry` payloads |
+| `list_export_journal_targets` | List the accounting-platform targets `export_journal` supports |
 | `parse_statement` | Parse an incoming camt.05x statement into data |
 | `list_entries` | List every entry across all statements (paginated) |
 | `filter_entries` | Return entries carrying a return reason code (paginated) |

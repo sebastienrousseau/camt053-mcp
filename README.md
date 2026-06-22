@@ -153,6 +153,8 @@ identically to the CLI and REST API.
 | `list_rulebook_clauses` | List the available rulebook citations (optionally filtered) |
 | `export_journal` | Export statement entries as Xero `BankTransactions` or QBO `JournalEntry` payloads |
 | `list_export_journal_targets` | List the accounting-platform targets `export_journal` supports |
+| `classify_entry` | Classify a statement entry via MCP Sampling (uses the *client's* LLM) |
+| `list_classify_entry_categories` | List the default categories `classify_entry` uses |
 | `parse_statement` | Parse an incoming camt.05x statement into data |
 | `list_entries` | List every entry across all statements (paginated) |
 | `filter_entries` | Return entries carrying a return reason code (paginated) |

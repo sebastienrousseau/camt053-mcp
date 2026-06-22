@@ -37,6 +37,8 @@ EXPECTED_TOOLS = {
     "validate_statement",
     "check_cbpr_readiness",
     "get_cbpr_cutover_date",
+    "cite_rulebook",
+    "list_rulebook_clauses",
     "parse_statement",
     "list_entries",
     "filter_entries",
@@ -86,7 +88,7 @@ def test_server_and_main_are_well_formed():
 
 
 def test_all_tools_registered():
-    """All thirteen tools are registered on the server."""
+    """Every tool is registered on the server."""
     assert _registered_tool_names() == EXPECTED_TOOLS
 
 

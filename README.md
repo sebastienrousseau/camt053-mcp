@@ -147,6 +147,10 @@ identically to the CLI and REST API.
 | `validate_records` | Validate flat records against a message type |
 | `validate_identifier` | Validate an IBAN, BIC, or LEI |
 | `validate_statement` | Validate a statement against its XSD and detect its type |
+| `check_cbpr_readiness` | Flag CBPR+ Nov 2026 cliff issues in a statement |
+| `get_cbpr_cutover_date` | Return the official CBPR+ cutover date (2026-11-16) |
+| `cite_rulebook` | Quote a curated SEPA / CBPR+ / HVPS+ rulebook clause |
+| `list_rulebook_clauses` | List the available rulebook citations (optionally filtered) |
 | `parse_statement` | Parse an incoming camt.05x statement into data |
 | `list_entries` | List every entry across all statements (paginated) |
 | `filter_entries` | Return entries carrying a return reason code (paginated) |

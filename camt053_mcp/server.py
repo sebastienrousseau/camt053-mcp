@@ -68,7 +68,7 @@ from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 
-from camt053_mcp import __version__
+from camt053_mcp import __version__, rulebook
 
 server = FastMCP("camt053")
 # FastMCP does not expose a version kwarg; without this override the
@@ -281,6 +281,56 @@ def get_cbpr_cutover_date() -> dict:
     a readiness check first.
     """
     return {"cutover_date": CBPR_CUTOVER_DATE}
+
+
+@server.tool()
+def cite_rulebook(scheme: str, version: str, clause: str) -> dict:
+    """Return a curated payments-rulebook citation.
+
+    Looks up one well-known rule across the SEPA, CBPR+, and HVPS+
+    rulebooks and returns a short summary together with the canonical
+    source URL so an agent can quote the rule and the operator can
+    verify it against the official document.
+
+    The registry is a curated convenience layer, not a verbatim
+    reproduction of copyrighted text. Always defer to ``source_url``
+    for authoritative wording before relying on a citation for
+    compliance or contractual decisions; the returned ``disclaimer``
+    field repeats this for the calling agent.
+
+    Args:
+        scheme: One of ``"SEPA"``, ``"CBPR+"``, or ``"HVPS+"`` (case
+            sensitive).
+        version: The rulebook version (e.g. ``"2025"`` or ``"2026"``).
+        clause: A kebab-case clause identifier from
+            ``list_rulebook_clauses``.
+
+    Returns:
+        A citation dict ``{"scheme", "version", "clause", "title",
+        "summary", "source_url", "as_of", "disclaimer"}`` or an
+        ``{"error": ...}`` payload if the citation is not in the
+        registry.
+    """
+    return rulebook.cite(scheme, version, clause)
+
+
+@server.tool()
+def list_rulebook_clauses(
+    scheme: str | None = None, version: str | None = None
+) -> list[dict]:
+    """List the curated rulebook citations the server knows about.
+
+    Returns the full registry, optionally filtered by ``scheme`` and /
+    or ``version``. Use the resulting ``clause`` values as input to
+    ``cite_rulebook``.
+
+    Args:
+        scheme: Restrict to one scheme (e.g. ``"SEPA"``). ``None``
+            returns all schemes.
+        version: Restrict to one version (e.g. ``"2026"``). ``None``
+            returns all versions.
+    """
+    return rulebook.list_clauses(scheme=scheme, version=version)
 
 
 @server.tool()

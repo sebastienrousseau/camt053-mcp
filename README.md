@@ -110,6 +110,9 @@ python -m pip install -U camt053-mcp
 
 ## Quick Start
 
+For the 10-minute install → MCP client config → first conversation
+tutorial, see [`docs/quickstart.md`](docs/quickstart.md).
+
 Launch the server over stdio (the FastMCP default transport):
 
 ```sh

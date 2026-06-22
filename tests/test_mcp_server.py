@@ -41,6 +41,8 @@ EXPECTED_TOOLS = {
     "list_rulebook_clauses",
     "export_journal",
     "list_export_journal_targets",
+    "classify_entry",
+    "list_classify_entry_categories",
     "parse_statement",
     "list_entries",
     "filter_entries",

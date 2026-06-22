@@ -65,10 +65,10 @@ from camt053.compliance import (
     check_cbpr_readiness as _check_cbpr_readiness,
 )
 from camt053.exceptions import Camt053Error
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 
-from camt053_mcp import __version__, rulebook
+from camt053_mcp import __version__, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
 
 server = FastMCP("camt053")
@@ -382,6 +382,56 @@ def list_export_journal_targets() -> list[str]:
     S/4HANA support is a tracked follow-up.
     """
     return sorted(_export_journal.SUPPORTED_TARGETS)
+
+
+@server.tool()
+async def classify_entry(
+    ctx: Context,
+    entry: dict,
+    categories: list[str] | None = None,
+) -> dict:
+    """Classify a statement entry via MCP Sampling (D3 in #17).
+
+    Uses the **MCP Sampling** protocol primitive: the server (this
+    process) asks the *client* (the agent's host application) to
+    perform an LLM completion on the server's behalf, then receives
+    the model's structured response. Keeps every LLM call in the
+    operator's existing model contract (privacy, billing, audit).
+
+    The model is asked to choose exactly one category from
+    ``categories`` (or :data:`camt053_mcp.classify.DEFAULT_CATEGORIES`
+    if ``None`` is passed) and return a structured
+    ``{category, confidence, explanation}`` payload.
+
+    Clients that do not support Sampling will get an
+    ``{"error": "..."}`` envelope and can fall back to a rules-only
+    classifier.
+
+    Args:
+        ctx: The FastMCP Context (auto-injected; provides
+            ``session.create_message``).
+        entry: A statement entry dict (the shape returned by
+            ``parse_statement`` / ``list_entries``).
+        categories: The candidate categories. ``None`` uses the
+            built-in default list (12 common payment buckets).
+
+    Returns:
+        ``{"category", "confidence", "explanation"}`` on success or
+        ``{"error": "..."}`` on Sampling failure / malformed model
+        response / out-of-vocabulary category.
+    """
+    return await classify.classify_entry(ctx, entry, categories)
+
+
+@server.tool()
+def list_classify_entry_categories() -> list[str]:
+    """List the default categories the ``classify_entry`` tool uses.
+
+    Operators can override the list per call; this tool exposes the
+    default the prompt template ships with so an agent can quote them
+    to the user before invoking the classifier.
+    """
+    return list(classify.DEFAULT_CATEGORIES)
 
 
 @server.tool()

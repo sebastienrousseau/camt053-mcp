@@ -1,0 +1,40 @@
+{
+  "$schema": "https://glama.ai/api/mcp/v1/schemas/glama.json",
+  "maintainers": ["sebastienrousseau"],
+  "title": "camt053-mcp",
+  "display_name": "Camt053 MCP",
+  "description": "Model Context Protocol server for the camt053 ISO 20022 bank-statement library. Exposes 11 tools over stdio for message-type discovery, return-reason lookup, schema discovery, payment-record validation, IBAN/BIC identifier validation, camt.053 statement parsing and XSD validation, entry listing and filtering, and one-shot generation of validated reversing-entry XML. All tools are thin typed wrappers over the shared camt053.services facade, sigstore-attested releases.",
+  "version": "0.0.6",
+  "repository": "https://github.com/sebastienrousseau/camt053-mcp",
+  "homepage": "https://sebastienrousseau.github.io/camt053/",
+  "license": "Apache-2.0",
+  "language": "Python",
+  "runtime": "python",
+  "categories": ["finance"],
+  "tags": [
+    "iso20022",
+    "camt053",
+    "camt052",
+    "camt054",
+    "bank-statements",
+    "cash-management",
+    "reversing-entries",
+    "return-reasons",
+    "sepa",
+    "iban",
+    "bic",
+    "xsd-validation",
+    "payment-validation",
+    "fastmcp",
+    "financial-services",
+    "fintech"
+  ],
+  "mcpServers": {
+    "camt053": {
+      "command": "camt053-mcp"
+    }
+  },
+  "installation": {
+    "pip": "pip install camt053-mcp"
+  }
+}

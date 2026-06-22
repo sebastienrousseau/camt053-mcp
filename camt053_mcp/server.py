@@ -58,11 +58,23 @@ import json
 from typing import Any
 
 from camt053 import services
+from camt053.compliance import (
+    CBPR_CUTOVER_DATE,
+)
+from camt053.compliance import (
+    check_cbpr_readiness as _check_cbpr_readiness,
+)
 from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 
+from camt053_mcp import __version__
+
 server = FastMCP("camt053")
+# FastMCP does not expose a version kwarg; without this override the
+# MCP SDK's own version leaks into serverInfo.version, breaking
+# manifest/runtime coherence checks (e.g. Glama scoring).
+server._mcp_server.version = __version__
 
 
 def _paginate(
@@ -221,6 +233,54 @@ def validate_statement(xml: str) -> dict:
         return services.validate_statement(xml)
     except (ValueError, Camt053Error) as exc:
         return {"error": str(exc)}
+
+
+@server.tool()
+def check_cbpr_readiness(xml: str) -> dict:
+    """Check a camt.053 statement against the CBPR+ Nov 2026 rules.
+
+    A coordinated CBPR+ / Fedwire / CHAPS / T2 cutover lands on
+    **14-16 November 2026**: unstructured-only postal addresses get rejected,
+    ``camt.110/111`` exceptions and investigations become mandatory, and T2S
+    R2026.NOV upgrades camt.053 / 054 to schema revision MR2026.
+
+    This tool walks the supplied payload and reports every issue that will
+    fail the Nov 2026 acceptance rules:
+
+    * **Schema version** vs the CBPR+ current set (``camt.053.001.08`` /
+      ``camt.053.001.13``); ``.02``-``.07`` are flagged as deprecated
+      warnings; unknown / non-camt.053 namespaces as errors.
+    * **Postal addresses**: every ``<PstlAdr>`` is classified as fully
+      structured, hybrid, or **unstructured-only** (``<AdrLine>`` without
+      ``<TwnNm>`` + ``<Ctry>`` siblings, the Nov 2026 reject case).
+
+    Returns a dictionary ``{"cbpr_ready": bool, "schema_version": str | None,
+    "checked_at": ISO-8601 UTC, "cutover_date": "2026-11-16",
+    "issues": [...], "summary": {...}}``. ``cbpr_ready`` is ``True`` iff no
+    ``severity="error"`` issue was raised. An ``{"error": ...}`` envelope
+    is returned instead if the XML is malformed or refused by the
+    hardened pre-flight (DOCTYPE / ENTITY / oversized payload).
+
+    Args:
+        xml: The raw camt.05x statement XML as a string.
+    """
+    try:
+        return _check_cbpr_readiness(xml)
+    except (ValueError, Camt053Error) as exc:
+        return {"error": str(exc)}
+
+
+@server.tool()
+def get_cbpr_cutover_date() -> dict:
+    """Return the official CBPR+ / Nov 2026 cutover date as ISO 8601.
+
+    The cutover (``2026-11-16``) is the date after which the rules checked
+    by ``check_cbpr_readiness`` are enforced by the major clearing systems;
+    payments that fail will be rejected at receive-time. Surfaced as a
+    discrete tool so agents can quote it directly without having to call
+    a readiness check first.
+    """
+    return {"cutover_date": CBPR_CUTOVER_DATE}
 
 
 @server.tool()

@@ -30,9 +30,6 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-# Poetry
-poetry.lock
-
 # Temp
 tmp/
 *.tmp

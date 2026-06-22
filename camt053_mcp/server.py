@@ -69,6 +69,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 
 from camt053_mcp import __version__, rulebook
+from camt053_mcp import export_journal as _export_journal
 
 server = FastMCP("camt053")
 # FastMCP does not expose a version kwarg; without this override the
@@ -331,6 +332,56 @@ def list_rulebook_clauses(
             returns all versions.
     """
     return rulebook.list_clauses(scheme=scheme, version=version)
+
+
+@server.tool()
+def export_journal(xml: str, target: str = "xero") -> dict:
+    """Export a parsed camt.053 statement as accounting-platform journal entries.
+
+    Parses the supplied statement and re-shapes every booked entry
+    into a target-specific journal-entry payload ready for direct
+    POST to the accounting platform's REST API.
+
+    Supported targets (see ``camt053_mcp.export_journal.SUPPORTED_TARGETS``):
+
+    * ``"xero"`` - returns a list of Xero ``BankTransactions``
+      payloads. Each entry maps to ``{Type, Reference, Date,
+      BankAccount, Contact, LineAmountTypes, CurrencyCode,
+      LineItems}``; CRDT entries become ``Type=RECEIVE`` and DBIT
+      entries ``Type=SPEND``.
+    * ``"qbo"`` - returns a list of QuickBooks Online
+      ``JournalEntry`` payloads. Each entry produces a balanced
+      two-line journal (one to the bank account, one to a clearing
+      account; sign flipped on debit entries).
+
+    Operator-specific values (account codes, contact identifiers,
+    realm IDs) appear as ``"OPERATOR_FILL"`` placeholders so the
+    operator knows exactly what still needs wiring. The response's
+    ``placeholder_count`` field reports the total.
+
+    NetSuite + SAP S/4HANA targets are tracked as a follow-up in #17.
+
+    Args:
+        xml: The raw camt.053 statement XML as a string.
+        target: One of ``"xero"`` or ``"qbo"`` (default ``"xero"``).
+
+    Returns:
+        ``{"target", "entries", "placeholder_count", "placeholder_field"}``
+        on success, or ``{"error": ...}`` on failure (unsupported
+        target / malformed XML / parse refusal).
+    """
+    return _export_journal.export(xml, target)
+
+
+@server.tool()
+def list_export_journal_targets() -> list[str]:
+    """List the accounting-platform targets the ``export_journal`` tool supports.
+
+    Returns the sorted list of valid ``target`` arguments accepted by
+    ``export_journal`` (``["qbo", "xero"]`` today). NetSuite and SAP
+    S/4HANA support is a tracked follow-up.
+    """
+    return sorted(_export_journal.SUPPORTED_TARGETS)
 
 
 @server.tool()

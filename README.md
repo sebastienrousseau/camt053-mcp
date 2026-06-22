@@ -175,11 +175,16 @@ with the rest of the server's error convention.
 | Prompt | Purpose |
 |--------|---------|
 | `reversal_preview` | Guide an agent through a safe, confirm-before-generate reversal workflow |
+| `reconcile_against_pain001` | Match booked statement entries to the originating pain.001 batch on `EndToEndId`, surface exceptions |
+| `find_duplicate_entries` | Flag exact + suspected duplicates on a statement with confidence and next-action hints |
+| `match_to_invoice_set` | Match incoming credits to an AR invoice ledger (exact + remittance + partial / multi-invoice tiers) |
 
 `reversal_preview` takes an optional `reason_code` (default `"AC04"`) and
 returns a four-step message template: parse the statement, preview the matching
 entries with `filter_entries`, confirm with the operator, then call
-`generate_reversal`.
+`generate_reversal`. The other three prompts take no parameters and return a
+two-message user-prompt + assistant-walkthrough template the agent can replay
+verbatim.
 
 ## Resources
 

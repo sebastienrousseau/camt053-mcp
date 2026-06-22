@@ -491,6 +491,137 @@ def reversal_preview(
     ]
 
 
+@server.prompt()
+def reconcile_against_pain001() -> list[UserMessage | AssistantMessage]:
+    """Guide an agent through reconciling a camt.053 statement against a pain.001 batch.
+
+    Returns a multi-step message template that walks an agent through
+    matching booked entries on a bank statement back to the original
+    payment-initiation batch that produced them: parse both sides,
+    pair on ``EndToEndId``, surface unmatched entries on either side
+    and propose explanations.
+
+    No parameters - the workflow is symmetric, the user supplies both
+    payloads at the first step.
+    """
+    return [
+        UserMessage(
+            "I have a camt.053 statement from my bank and the original "
+            "pain.001 credit-transfer batch we sent earlier. I need to "
+            "reconcile: which payments cleared, which are missing, and "
+            "which entries on the statement don't match anything we "
+            "initiated. Walk me through it carefully."
+        ),
+        AssistantMessage(
+            "We'll do this in five steps:\n"
+            "1. Parse the statement: call `parse_statement` with the "
+            "camt.053 XML to extract every booked entry.\n"
+            "2. Read the pain.001: load the original batch and extract "
+            "the list of (EndToEndId, amount, currency, counterparty) "
+            "triples that were initiated.\n"
+            "3. Pair on EndToEndId: every statement entry has an "
+            "`end_to_end_id` field (under transaction details). Match "
+            "the two lists on this key.\n"
+            "4. Report exceptions: list (a) initiated payments missing "
+            "from the statement (in flight or rejected), (b) statement "
+            "entries we did not initiate (cross-postings, fees, errors), "
+            "and (c) matches where amount or counterparty differ "
+            "(currency conversion or partial settlement).\n"
+            "5. Propose next actions for each exception bucket "
+            "(re-send, query the bank, post to suspense).\n"
+            "Please share the camt.053 statement first; we'll start at "
+            "step 1."
+        ),
+    ]
+
+
+@server.prompt()
+def find_duplicate_entries() -> list[UserMessage | AssistantMessage]:
+    """Guide an agent through finding duplicate entries within a statement.
+
+    Returns a multi-step message template that walks an agent through
+    flagging suspected duplicates on a camt.053 statement: parse the
+    statement, group entries on the dedupe key
+    ``(GrpHdr/MsgId, Stmt/Id, Stmt/ElctrncSeqNb)``, then surface any
+    pair of entries with the same amount / counterparty / value date
+    that the dedupe key did not already catch.
+    """
+    return [
+        UserMessage(
+            "Find any duplicate entries on this camt.053 statement. I "
+            "want both exact duplicates (same entry posted twice) and "
+            "suspected duplicates (same amount, counterparty, and value "
+            "date but different references) flagged separately, with a "
+            "confidence note on each."
+        ),
+        AssistantMessage(
+            "We'll do this in four steps:\n"
+            "1. Parse the statement: call `parse_statement` with the "
+            "raw XML.\n"
+            "2. Exact duplicates: group every entry on its "
+            "(reference, amount, currency, value_date) tuple. Any group "
+            "of size 2+ is an exact duplicate; report each with its "
+            "entry references.\n"
+            "3. Suspected duplicates: within each statement, group the "
+            "remaining entries on (amount, currency, value_date, "
+            "counterparty_account). Pairs in the same group with "
+            "different references and posting times within 5 minutes "
+            "are suspected duplicates. Report each pair with the "
+            "matching fields and the diverging ones.\n"
+            "4. For each flagged group, suggest the most likely cause "
+            "(true duplicate from a retry; legitimate split payment; "
+            "reversal pair where one half is missing the reversal "
+            "indicator) and the recommended next action.\n"
+            "Please share the camt.053 statement and we'll start at "
+            "step 1."
+        ),
+    ]
+
+
+@server.prompt()
+def match_to_invoice_set() -> list[UserMessage | AssistantMessage]:
+    """Guide an agent through matching statement entries to a set of invoices.
+
+    Returns a multi-step message template that walks an agent through
+    matching incoming credits on a camt.053 statement against an
+    accounts-receivable invoice ledger: parse the statement, narrow
+    to credits, then pair on (amount, currency) first and remittance
+    information second, surfacing under- / over-payments and unmatched
+    invoices.
+    """
+    return [
+        UserMessage(
+            "Match every incoming credit on this camt.053 statement to "
+            "an invoice from my open AR ledger. Tell me which invoices "
+            "are paid, which are partly paid, which are over-paid, "
+            "which statement credits don't match any invoice, and "
+            "which open invoices remain unmatched."
+        ),
+        AssistantMessage(
+            "We'll do this in five steps:\n"
+            "1. Parse the statement: call `parse_statement` with the "
+            "raw XML; we want every entry where credit_debit is CRDT.\n"
+            "2. Tier 1 (exact match): for each credit, look for an "
+            "open invoice whose amount, currency, and customer/IBAN "
+            "(if known) match exactly.\n"
+            "3. Tier 2 (remittance match): for the remaining credits, "
+            "scan unstructured remittance text and structured "
+            "remittance references for invoice numbers; match on those.\n"
+            "4. Tier 3 (partial / over / multi-invoice): for credits "
+            "still unmatched, look for combinations of open invoices "
+            "that sum to the credit amount (down-payments, batched "
+            "payments). Flag confidence levels.\n"
+            "5. Report four buckets: paid-in-full, partly-paid (with "
+            "outstanding amount), over-paid (with surplus), unmatched "
+            "credits (with the suggested next action: query customer, "
+            "post to suspense, refund). End with the list of invoices "
+            "still open.\n"
+            "Please share the camt.053 statement and a JSON array of "
+            "open invoices to start step 1."
+        ),
+    ]
+
+
 def main() -> None:
     """Run the Camt053 MCP server over stdio (the ``camt053-mcp`` entry point)."""
     server.run()

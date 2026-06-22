@@ -331,6 +331,54 @@ def test_reversal_preview_prompt_parameterised_reason():
     assert "AC04" not in texts
 
 
+def test_reconcile_against_pain001_prompt_registered():
+    """The ``reconcile_against_pain001`` prompt is registered."""
+    assert "reconcile_against_pain001" in _registered_prompt_names()
+
+
+def test_reconcile_against_pain001_prompt_renders():
+    """The reconcile prompt produces a 5-step user+assistant template."""
+    result = asyncio.run(
+        server.server.get_prompt("reconcile_against_pain001", {})
+    )
+    texts = " ".join(m.content.text for m in result.messages)
+    assert len(result.messages) == 2
+    assert "pain.001" in texts
+    assert "EndToEndId" in texts
+    assert "parse_statement" in texts
+
+
+def test_find_duplicate_entries_prompt_registered():
+    """The ``find_duplicate_entries`` prompt is registered."""
+    assert "find_duplicate_entries" in _registered_prompt_names()
+
+
+def test_find_duplicate_entries_prompt_renders():
+    """The duplicate-finder prompt produces a 4-step template."""
+    result = asyncio.run(
+        server.server.get_prompt("find_duplicate_entries", {})
+    )
+    texts = " ".join(m.content.text for m in result.messages)
+    assert len(result.messages) == 2
+    assert "duplicate" in texts.lower()
+    assert "parse_statement" in texts
+
+
+def test_match_to_invoice_set_prompt_registered():
+    """The ``match_to_invoice_set`` prompt is registered."""
+    assert "match_to_invoice_set" in _registered_prompt_names()
+
+
+def test_match_to_invoice_set_prompt_renders():
+    """The invoice-matcher prompt produces a 5-step template."""
+    result = asyncio.run(server.server.get_prompt("match_to_invoice_set", {}))
+    texts = " ".join(m.content.text for m in result.messages)
+    assert len(result.messages) == 2
+    assert "invoice" in texts.lower()
+    assert "remittance" in texts.lower()
+    assert "parse_statement" in texts
+
+
 def test_generate_reversal_no_matching_reason_returns_error(statement_xml):
     """A reason code matching no entries yields a serialized error string."""
     out = server.generate_reversal(statement_xml, "ZZ99")

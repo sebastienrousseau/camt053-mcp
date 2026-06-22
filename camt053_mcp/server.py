@@ -500,6 +500,106 @@ def message_type_catalog() -> str:
         return json.dumps({"error": str(exc)})
 
 
+@server.resource("camt053://session/{session_id}/bank/{bic}")
+def bank_session_context(session_id: str, bic: str) -> str:
+    """Stable per-session, per-bank context for multi-bank workflows.
+
+    A templated MCP Resource that gives an agent a stable URI namespace
+    for the (session, bank) pair it is reasoning about. The server is
+    stateless: the URI's ``session_id`` is opaque to the server and
+    treated as an agent-chosen tag (a chat id, a workflow id, an
+    operator-set label). The ``bic`` is the bank's BIC8 or BIC11.
+
+    The resource returns a JSON dict with everything the agent
+    typically needs to "anchor" itself when working with one bank's
+    statements:
+
+    * ``session_id`` / ``bic`` echoed back so the agent can confirm
+      its URI was parsed correctly.
+    * ``bic_country`` — the ISO-3166-1 country code embedded in the
+      BIC (characters 5-6); ``None`` if the BIC is malformed.
+    * ``bic_kind`` — ``"BIC8"`` (8-char head office) or
+      ``"BIC11"`` (full 11-char branch); ``None`` if malformed.
+    * ``recommended_rulebook_clauses`` — the curated rulebook clause
+      identifiers most relevant to the bank's likely jurisdiction
+      (SEPA for EU/UK BICs; CBPR+ + HVPS+ for everyone).
+    * ``cbpr_cutover_date`` — the well-known Nov 2026 cutover date.
+
+    Multiple agents can share one server: agent A's
+    ``camt053://session/A/bank/NWBKGB2L`` and agent B's
+    ``camt053://session/B/bank/NWBKGB2L`` are distinct namespaces
+    even though the underlying bank context is identical.
+    """
+    payload = _bank_session_payload(session_id, bic)
+    return json.dumps(payload)
+
+
+def _bank_session_payload(session_id: str, bic: str) -> dict[str, Any]:
+    """Build the JSON payload for the ``bank_session_context`` resource."""
+    bic_upper = bic.upper()
+    bic_country: str | None = None
+    bic_kind: str | None = None
+    if len(bic_upper) in (8, 11) and bic_upper.isalnum():
+        bic_country = bic_upper[4:6]
+        bic_kind = "BIC8" if len(bic_upper) == 8 else "BIC11"
+
+    eu_uk_countries = {
+        "AT",
+        "BE",
+        "BG",
+        "CY",
+        "CZ",
+        "DE",
+        "DK",
+        "EE",
+        "ES",
+        "FI",
+        "FR",
+        "GB",
+        "GR",
+        "HR",
+        "HU",
+        "IE",
+        "IT",
+        "LT",
+        "LU",
+        "LV",
+        "MT",
+        "NL",
+        "PL",
+        "PT",
+        "RO",
+        "SE",
+        "SI",
+        "SK",
+    }
+    recommended: list[str] = []
+    if bic_country in eu_uk_countries:
+        recommended.extend(
+            [
+                "SEPA/2025/iban-only",
+                "SEPA/2025/remittance-info-max-140",
+                "SEPA/2025/verification-of-payee",
+            ]
+        )
+    recommended.extend(
+        [
+            "CBPR+/2026/structured-address-mandate-nov-2026",
+            "CBPR+/2026/uetr-mandatory",
+            "HVPS+/2026/t2-rtgs-uplift-mr2026",
+        ]
+    )
+
+    return {
+        "session_id": session_id,
+        "bic": bic_upper,
+        "bic_country": bic_country,
+        "bic_kind": bic_kind,
+        "recommended_rulebook_clauses": recommended,
+        "cbpr_cutover_date": CBPR_CUTOVER_DATE,
+    }
+
+
 @server.prompt()
 def reversal_preview(
     reason_code: str = "AC04",

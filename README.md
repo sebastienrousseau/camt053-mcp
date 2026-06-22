@@ -197,6 +197,7 @@ calling a tool. Each resource returns a JSON payload.
 |--------------|----------|
 | `camt053://return-reasons` | The ISO external return-reason catalog — a list of `{"code", "name"}` |
 | `camt053://message-types` | The supported camt.05x message types — a list of `{"message_type", "name"}` |
+| `camt053://session/{session_id}/bank/{bic}` | Templated per-(session, bank) context: parsed BIC country/kind, recommended SEPA / CBPR+ / HVPS+ rulebook clauses, Nov 2026 cutover date |
 
 Both back onto the shared `camt053.services` layer, so they stay in sync with
 the equivalent `list_return_reasons` / `list_message_types` tools. On an error

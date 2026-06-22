@@ -433,6 +433,66 @@ def test_message_type_resource_error_is_serializable(monkeypatch):
     assert payload == {"error": "boom"}
 
 
+# ---------------------------------------------------------------------------
+# bank_session_context templated resource (D1 in #17)
+# ---------------------------------------------------------------------------
+
+
+def test_bank_session_payload_eu_uk_bic():
+    """An EU/UK BIC yields SEPA + CBPR+ + HVPS+ recommended clauses."""
+    payload = server._bank_session_payload("chat-42", "NWBKGB2LXXX")
+    assert payload["session_id"] == "chat-42"
+    assert payload["bic"] == "NWBKGB2LXXX"
+    assert payload["bic_country"] == "GB"
+    assert payload["bic_kind"] == "BIC11"
+    clauses = payload["recommended_rulebook_clauses"]
+    assert "SEPA/2025/iban-only" in clauses
+    assert "CBPR+/2026/structured-address-mandate-nov-2026" in clauses
+    assert "HVPS+/2026/t2-rtgs-uplift-mr2026" in clauses
+
+
+def test_bank_session_payload_non_eu_bic_skips_sepa():
+    """A non-EU/UK BIC omits the SEPA clauses but keeps CBPR+ + HVPS+."""
+    payload = server._bank_session_payload("chat-1", "BOFAUS3NXXX")
+    assert payload["bic_country"] == "US"
+    clauses = payload["recommended_rulebook_clauses"]
+    assert not any(c.startswith("SEPA/") for c in clauses)
+    assert any(c.startswith("CBPR+/") for c in clauses)
+
+
+def test_bank_session_payload_bic8_kind():
+    """An 8-character BIC is classified as BIC8."""
+    payload = server._bank_session_payload("s", "NWBKGB2L")
+    assert payload["bic_kind"] == "BIC8"
+
+
+def test_bank_session_payload_malformed_bic():
+    """A malformed BIC yields None for country + kind, no crash."""
+    payload = server._bank_session_payload("s", "TOO-SHORT")
+    assert payload["bic_kind"] is None
+    assert payload["bic_country"] is None
+
+
+def test_bank_session_payload_lowercases_normalised():
+    """The payload normalises BIC to uppercase."""
+    payload = server._bank_session_payload("s", "nwbkgb2lxxx")
+    assert payload["bic"] == "NWBKGB2LXXX"
+
+
+def test_bank_session_payload_cutover_date_included():
+    """Every payload carries the well-known Nov 2026 cutover date."""
+    payload = server._bank_session_payload("s", "NWBKGB2L")
+    assert payload["cbpr_cutover_date"]
+    assert payload["cbpr_cutover_date"].startswith("2026-")
+
+
+def test_bank_session_resource_via_fastmcp():
+    """The templated resource resolves through FastMCP's URI router."""
+    payload = _read_resource("camt053://session/chat-42/bank/NWBKGB2LXXX")
+    assert payload["session_id"] == "chat-42"
+    assert payload["bic"] == "NWBKGB2LXXX"
+
+
 def test_main_runs_server(monkeypatch):
     """``main`` invokes ``server.run`` and returns without hanging."""
     calls = []

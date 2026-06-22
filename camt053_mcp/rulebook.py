@@ -66,6 +66,12 @@ _ENTRIES: dict[tuple[str, str, str], RulebookEntry] = {}
 
 
 def _register(entry: RulebookEntry) -> None:
+    """Add an entry to the module-level registry.
+
+    Raises ``ValueError`` on duplicate ``(scheme, version, clause)``
+    keys to guard against accidental copy-paste collisions when the
+    registry grows.
+    """
     key = (entry["scheme"], entry["version"], entry["clause"])
     if key in _ENTRIES:
         raise ValueError(f"duplicate rulebook entry: {key}")

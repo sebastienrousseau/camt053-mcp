@@ -25,7 +25,8 @@ EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 
 def _example_paths() -> list[Path]:
     return sorted(
-        p for p in EXAMPLES_DIR.glob("*.py")
+        p
+        for p in EXAMPLES_DIR.glob("*.py")
         if p.stem[0].isdigit() or p.stem == "mcp_tools"
     )
 

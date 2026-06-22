@@ -81,3 +81,32 @@ The following are generally out of scope:
   beyond documented usage.
 
 Thank you for helping keep camt053-mcp and its users safe.
+
+## NIST SSDF practice mapping
+
+This repository follows the practices of the **NIST Secure Software
+Development Framework (SP 800-218 Rev 1.1)**. The table below maps
+each SSDF practice that applies to an open-source Python library to
+the concrete control(s) that implement it in this repo.
+
+| SSDF practice | How this repo addresses it |
+| :--- | :--- |
+| **PO.1** Define security requirements | This `SECURITY.md`, plus the in-scope/out-of-scope sections above. |
+| **PO.3** Implement supporting toolchains | `pyproject.toml`; `.github/workflows/ci.yml` (test + lint + security scan); `.github/workflows/scorecard.yml`. |
+| **PO.4** Define and use criteria for software security checks | CI enforces tests on Python 3.10/3.11/3.12, ruff lint, black formatting, mypy, bandit security scan, interrogate docstring coverage; Scorecard runs weekly. |
+| **PO.5** Implement and maintain secure environments | PyPI Trusted Publishing (OIDC, no long-lived tokens); branch protection + signed commits on `main`; per-workflow `permissions:` minimisation. |
+| **PS.1** Protect all forms of code from unauthorized access and tampering | Signed commits (SSH ed25519); branch protection; required PR reviews; `persist-credentials: false` on Scorecard checkout. |
+| **PS.2** Provide a mechanism for verifying software release integrity | Signed git tags; `actions/attest-build-provenance@v3` SLSA L3 provenance attestations; PEP 740 sigstore attestations on PyPI uploads (`pypa/gh-action-pypi-publish` with `attestations: true`). |
+| **PS.3** Archive and protect each software release | GitHub Releases pin the exact `dist/*` artifacts; CycloneDX 1.6 + SPDX 2.3 SBOMs and a pip-licenses manifest attached to every release; PyPI is the immutable archive. |
+| **PW.1** Design software to mitigate security risks | XML inputs are delegated to the core `camt053` library which uses `defusedxml` (no XXE / billion-laughs); the MCP server returns serialised `{"error": ...}` payloads rather than raising into client transports. |
+| **PW.4** Reuse well-secured software when feasible | Dependencies pinned via pyproject; Dependabot grouped weekly + separate security-update group; updates reviewed before merge. |
+| **PW.5** Adhere to secure coding practices | `ruff`, `bandit -ll`, strict `mypy`, code review on every PR. |
+| **PW.6** Configure build processes to improve security | Reproducible builds via `python -m build` / `poetry build` with locked dependencies; CI uses pinned action versions; minimum-required GH Actions permissions. |
+| **PW.7** Review and analyze human-readable code | All changes go through PRs with required review; CodeQL static analysis runs on push/PR; ruff + mypy + bandit on every change. |
+| **PW.8** Test executable code | pytest across 3 Python versions; per-tool runnable examples auto-exercised in CI via `tests/test_examples.py`. |
+| **PW.9** Configure software with secure defaults | Stdio transport binds to the local process owner only (no network listener); tools return errors as data instead of raising into the client. |
+| **RV.1** Identify and confirm vulnerabilities on an ongoing basis | Dependabot daily; `bandit` in CI; OpenSSF Scorecard weekly; GitHub Security Advisories accept reports. |
+| **RV.2** Assess, prioritise, and remediate vulnerabilities | Coordinated-disclosure timeline above (3-day ack / 7-day assessment / 30-day fix); CHANGELOG + advisory at fix publication. |
+| **RV.3** Analyze root causes | Each security advisory captures root cause + remediation in the GitHub Security Advisory body; lessons feed back into added regression tests. |
+
+Cross-suite practices (organisation roles, multi-package release governance) are owned by the upstream [`camt053`](https://github.com/sebastienrousseau/camt053) repository's `SECURITY.md`.

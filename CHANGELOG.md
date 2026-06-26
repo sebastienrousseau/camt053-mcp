@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.7] - 2026-06-26
+
+### Changed
+
+- **Version** — suite-wide lockstep bump to `0.0.7` to keep all `camt053`
+  packages on the same version. No functional changes to the MCP server.
+
+### Fixed
+
+- **Type annotation** — annotated the `ctx` parameter of `classify_entry`
+  (mypy `no-untyped-def`).
+- **Test coverage** — restored 100% coverage with a test for the
+  entry-level error path in `export_journal.export`.
+
 ## [0.0.6] - 2026-06-22
 
 ### Added
@@ -64,6 +78,8 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Added a version-consistency test that parses `version` out of `pyproject.toml`
   and asserts it equals `camt053_mcp.__version__`, guarding against future drift.
 
+[0.0.7]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.7
+[0.0.6]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.6
 [0.0.5]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.5
 [0.0.4]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.4
 [0.0.3]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.3

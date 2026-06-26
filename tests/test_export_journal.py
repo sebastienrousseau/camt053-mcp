@@ -148,6 +148,16 @@ class TestExport:
         result = export_journal.export("not xml", "xero")
         assert "error" in result
 
+    def test_entry_level_error_is_propagated(self, monkeypatch) -> None:
+        """An error envelope from ``list_entries`` is surfaced verbatim."""
+        monkeypatch.setattr(
+            export_journal.services,
+            "list_entries",
+            lambda xml: [{"error": "boom"}],
+        )
+        result = export_journal.export("<doc/>", "xero")
+        assert result == {"error": "boom"}
+
     def test_placeholder_count_reflects_real_count(
         self, statement_xml
     ) -> None:

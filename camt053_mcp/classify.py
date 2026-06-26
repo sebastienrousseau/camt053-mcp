@@ -76,7 +76,7 @@ def _classification_prompt(
 
 
 async def classify_entry(
-    ctx,
+    ctx: Any,
     entry: dict[str, Any],
     categories: list[str] | None = None,
     *,

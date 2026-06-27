@@ -1,0 +1,2 @@
+# Static security scanner for the CI "security" job.
+bandit>=1.7.0

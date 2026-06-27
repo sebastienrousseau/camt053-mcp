@@ -15,4 +15,4 @@
 
 """camt053-mcp: a Model Context Protocol server for the camt053 library."""
 
-__version__ = "0.0.8"
+__version__ = "0.0.9"

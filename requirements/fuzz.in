@@ -1,0 +1,5 @@
+# Runtime dependencies for the ClusterFuzzLite fuzz build (.clusterfuzzlite).
+# The local camt053_mcp package is added to PyInstaller's --paths instead of
+# being pip-installed, so no un-pinnable local install is needed.
+mcp>=1.2
+camt053>=0.0.6,<1

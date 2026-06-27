@@ -1,0 +1,10 @@
+# Lint/type-check tooling for the CI "lint" job.
+# Runtime deps (mcp, camt053) are included so mypy --strict can resolve the
+# FastMCP types rather than treating them as untyped.
+# ruff/black are pinned to the exact versions the CI lint job uses so the
+# check stays deterministic across uv recompiles.
+mcp>=1.2
+camt053>=0.0.6,<1
+ruff==0.1.15
+black==26.5.1
+mypy>=1.11,<3.0

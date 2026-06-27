@@ -1,0 +1,8 @@
+# Runtime + test dependencies for the CI "test" job.
+# Compiled to test.txt with hashes via: make pip-compile
+mcp>=1.2
+camt053>=0.0.6,<1
+pytest>=9.0.3,<10.0.0
+pytest-asyncio>=0.24,<2.0
+pytest-cov>=6.0.0,<8.0.0
+interrogate>=1.7

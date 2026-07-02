@@ -1,0 +1,40 @@
+name: MCP Protocol Conformance
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    name: MCP Inspector (tools/list, resources/list, prompts/list)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install camt053-mcp
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: List tools via MCP Inspector CLI
+        run: npx -y @modelcontextprotocol/inspector --cli camt053-mcp --method tools/list
+
+      - name: List resources via MCP Inspector CLI
+        run: npx -y @modelcontextprotocol/inspector --cli camt053-mcp --method resources/list
+
+      - name: List prompts via MCP Inspector CLI
+        run: npx -y @modelcontextprotocol/inspector --cli camt053-mcp --method prompts/list

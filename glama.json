@@ -4,7 +4,7 @@
   "title": "camt053-mcp",
   "display_name": "Camt053 MCP",
   "description": "Model Context Protocol server for the camt053 ISO 20022 bank-statement library. Exposes 19 tools, 3 resources (incl. templated camt053://session/{session_id}/bank/{bic}), and 4 guided prompts (reversal_preview, reconcile_against_pain001, find_duplicate_entries, match_to_invoice_set) over stdio: message-type discovery, return-reason lookup, schema introspection, payment-record validation, IBAN/BIC/LEI identifier validation, camt.053 statement parsing and XSD validation, Nov 2026 CBPR+ cliff readiness check, curated SEPA / CBPR+ / HVPS+ rulebook citation lookup (cite_rulebook), accounting-platform journal export (export_journal for Xero + QuickBooks Online), LLM-driven entry classification via MCP Sampling (classify_entry), entry listing and filtering, and one-shot validated reversing-entry XML generation. All tools are thin typed wrappers over the shared camt053.services facade. SLSA Build L3 provenance + PEP 740 sigstore attestations + CycloneDX/SPDX/licenses SBOMs on every release; NIST SP 800-218 SSDF practice IDs mapped in SECURITY.md.",
-  "version": "0.0.6",
+  "version": "0.0.10",
   "repository": "https://github.com/sebastienrousseau/camt053-mcp",
   "homepage": "https://sebastienrousseau.github.io/camt053/",
   "license": "Apache-2.0",

@@ -199,4 +199,5 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Python 3.10+ support; depends on `camt053` (>=0.0.1) and `mcp` (>=1.2)
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
+[0.0.10]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.10
 [0.0.1]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.1

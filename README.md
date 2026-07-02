@@ -363,6 +363,12 @@ Vulnerability Reporting, not public issues.
 - [`glama.json`](glama.json) — Glama directory manifest
 - Glama listing: <https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp>
 
+## MCP Registry
+
+`mcp-name: io.github.sebastienrousseau/camt053-mcp`
+
+---
+
 ## License
 
 Licensed under the [Apache License, Version 2.0][01]. Any contribution submitted

@@ -26,6 +26,29 @@ jobs:
           jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' \
             server.json > server.tmp && mv server.tmp server.json
 
+      # The MCP Registry validates PyPI ownership by fetching the
+      # PyPI JSON API and matching the `mcp-name:` marker in the
+      # README. release.yml (which publishes to PyPI) runs in
+      # parallel with this workflow on the same tag, so we must
+      # wait for PyPI to surface the new version before calling
+      # mcp-publisher; otherwise the first-time publish 404s on
+      # ownership verification.
+      - name: Wait for PyPI to surface this version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          PKG="camt053-mcp"
+          for i in $(seq 1 60); do
+            if curl -sfo /dev/null "https://pypi.org/pypi/${PKG}/${VERSION}/json"; then
+              echo "PyPI surfaced ${PKG}==${VERSION} after $((i * 5))s"
+              exit 0
+            fi
+            echo "Waiting for PyPI to surface ${PKG}==${VERSION} (attempt ${i}/60)…"
+            sleep 5
+          done
+          echo "::error::PyPI did not surface ${PKG}==${VERSION} within 5 minutes"
+          exit 1
+
       - name: Install mcp-publisher
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" \

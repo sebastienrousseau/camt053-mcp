@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.10] - 2026-07-02
+
+The **discoverability** cut. Registers `camt053-mcp` with the official
+Model Context Protocol Registry, adds MCP-spec conformance CI, and
+positions the server as part of the ISO 20022 MCP Suite. No functional
+or API changes.
+
+### Added
+
+- **Official MCP Registry integration.** `camt053-mcp` is now
+  registered with the official Model Context Protocol Registry
+  (`registry.modelcontextprotocol.io`) as
+  `io.github.sebastienrousseau/camt053-mcp`. A new `server.json` at
+  the repo root provides the registry metadata (PyPI package
+  identifier, stdio transport), and the README carries an
+  `mcp-name: io.github.sebastienrousseau/camt053-mcp` marker that the
+  registry uses to verify PyPI package ownership.
+- **Auto-publish workflow** (`.github/workflows/publish-mcp.yml`).
+  Authenticates to the MCP Registry via GitHub OIDC (no secrets
+  required) on every `v*.*.*` tag push, syncs the tag version into
+  `server.json`, and runs `mcp-publisher publish`. Registry metadata
+  now stays in lockstep with each PyPI release automatically.
+- **Protocol conformance CI** (`.github/workflows/mcp-inspect.yml`).
+  Runs `@modelcontextprotocol/inspector --cli` against `tools/list`,
+  `resources/list`, and `prompts/list` on every push and PR.
+  Continuous validation of MCP protocol conformance across all 19
+  tools, 3 resources, and 4 prompts.
+- **Suite discoverability.** The README now cross-links the sibling
+  banking MCP servers under a "Related MCP Servers" section,
+  positioning `camt053-mcp` as part of the ISO 20022 MCP Suite
+  alongside `pain001-mcp`, `bankstatementparser-mcp`, `acmt001-mcp`,
+  and `noyalib-mcp`.
+
+### Changed
+
+- GitHub repository description and topics refreshed: description now
+  positions the server as part of the ISO 20022 MCP Suite (with
+  CBPR+/HVPS+ readiness noted); topics extended with `mcp-server`,
+  `financial-services`, `iso-20022`, `stdio`, `claude-desktop`, and
+  `cbpr-plus`.
+- **Glama manifest version resynced** — `glama.json` was stale at
+  `0.0.6`; now bumped to `0.0.10` to match the release.
+
+### No functional / API changes
+
+- Same 19 MCP tools, 3 resources, and 4 prompts as v0.0.9. This
+  release is metadata, CI, and discoverability only.
+
 ## [0.0.9] - 2026-06-27
 
 ### Changed
@@ -151,4 +199,5 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Python 3.10+ support; depends on `camt053` (>=0.0.1) and `mcp` (>=1.2)
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
+[0.0.10]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.10
 [0.0.1]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.1

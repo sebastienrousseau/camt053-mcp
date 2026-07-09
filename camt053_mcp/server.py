@@ -67,6 +67,7 @@ from camt053.compliance import (
 from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
+from mcp.types import ToolAnnotations
 
 from camt053_mcp import __version__, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
@@ -76,6 +77,37 @@ server = FastMCP("camt053")
 # MCP SDK's own version leaks into serverInfo.version, breaking
 # manifest/runtime coherence checks (e.g. Glama scoring).
 server._mcp_server.version = __version__
+
+# Shared MCP tool annotations. These hints let MCP clients (and the Glama
+# quality grader) reason about a tool's safety, cacheability, and
+# auto-approval eligibility *without* executing it. Every tool is
+# classified by its ACTUAL behaviour, not blanket-applied.
+#
+# Almost every tool here is a pure, side-effect-free reader: it computes
+# solely over its arguments (an XML string, a message-type name, a record
+# list) or over data bundled with the server, writes nothing, and touches
+# neither the filesystem nor the network. Those are ``_PURE_READ`` --
+# read-only, idempotent, non-destructive, closed-world. No tool in this
+# server reads a caller-supplied filesystem path or mutates persistent
+# state, so no ``_FS_READ`` / ``_WRITE`` variants are needed.
+_PURE_READ = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+)
+
+# ``classify_entry`` is the sole exception: it performs an MCP *Sampling*
+# call, delegating an LLM completion to the connecting client. It changes
+# no state (read-only, non-destructive) but reaches an external system and
+# is non-deterministic, so it is open-world and NOT idempotent -- the same
+# entry may classify differently across calls.
+_SAMPLING = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=False,
+    openWorldHint=True,
+)
 
 
 def _paginate(
@@ -112,9 +144,13 @@ def _paginate(
     }
 
 
-@server.tool()
+@server.tool(title="List camt.05x message types", annotations=_PURE_READ)
 def list_message_types() -> list[dict]:
-    """List every supported ISO 20022 camt.05x message type.
+    """List every supported ISO 20022 camt.05x message type and its name.
+
+    Use this first, before any validation or generation call, to discover the
+    exact ``message_type`` strings this server accepts. For the return-reason
+    codes rather than message types, call ``list_return_reasons`` instead.
 
     Returns a list of ``{"message_type": ..., "name": ...}`` dictionaries, one
     per supported message type (e.g. ``camt.053.001.14``).
@@ -125,9 +161,13 @@ def list_message_types() -> list[dict]:
         return [{"error": str(exc)}]
 
 
-@server.tool()
+@server.tool(title="List ISO return reason codes", annotations=_PURE_READ)
 def list_return_reasons() -> list[dict]:
     """List every known ISO external return reason code with its name.
+
+    Use this to discover the ``reason_code`` values that ``filter_entries`` and
+    ``generate_reversal`` accept (e.g. ``AC04`` Closed Account). For the
+    supported message types rather than reason codes, use ``list_message_types``.
 
     Returns a list of ``{"code": ..., "name": ...}`` dictionaries (e.g.
     ``{"code": "AC04", "name": "Closed Account Number"}``).
@@ -138,9 +178,13 @@ def list_return_reasons() -> list[dict]:
         return [{"error": str(exc)}]
 
 
-@server.tool()
+@server.tool(title="Get required input fields", annotations=_PURE_READ)
 def get_required_fields(message_type: str) -> list[str]:
-    """List the required input field names for a given camt message type.
+    """List only the required input field names for a camt message type.
+
+    Use this for a quick checklist of the mandatory columns before building
+    reversing-entry records. When you need full type/format constraints (not
+    just which fields are required), call ``get_input_schema`` instead.
 
     Args:
         message_type: A supported ISO 20022 camt.05x message type.
@@ -151,9 +195,14 @@ def get_required_fields(message_type: str) -> list[str]:
         return [f"error: {exc}"]
 
 
-@server.tool()
+@server.tool(title="Get input JSON Schema", annotations=_PURE_READ)
 def get_input_schema(message_type: str) -> dict:
-    """Return the JSON Schema describing the flat input record for a type.
+    """Return the full JSON Schema for a message type's flat input record.
+
+    Use this to learn every field, its type, and its constraints before
+    assembling records, or to drive a form/UI. For just the required-field
+    names use ``get_required_fields``; to actually check records against this
+    schema use ``validate_records``.
 
     Args:
         message_type: A supported ISO 20022 camt.05x message type.
@@ -164,9 +213,13 @@ def get_input_schema(message_type: str) -> dict:
         return {"error": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Validate records against schema", annotations=_PURE_READ)
 def validate_records(message_type: str, records: list[dict]) -> dict:
     """Validate flat records against a message type's input JSON Schema.
+
+    Use this on in-memory reversing-entry records to catch structural/type
+    errors per row before generation. To validate a whole camt.05x *document*
+    (XML) against its XSD instead, use ``validate_statement``.
 
     Returns a report ``{"valid": bool, "total": int, "valid_count": int,
     "errors": [...]}``.
@@ -181,9 +234,13 @@ def validate_records(message_type: str, records: list[dict]) -> dict:
         return {"error": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Validate IBAN, BIC or LEI", annotations=_PURE_READ)
 def validate_identifier(kind: str, value: str) -> dict:
-    """Validate a financial identifier (IBAN, BIC, or LEI).
+    """Validate a single financial identifier (IBAN, BIC, or LEI).
+
+    Use this for a one-off identifier check with a clear pass/fail. To validate
+    identifiers embedded across a whole batch of records, prefer
+    ``validate_records`` rather than calling this per field.
 
     Returns ``{"kind": str, "value": str, "valid": bool}``.
 
@@ -197,9 +254,14 @@ def validate_identifier(kind: str, value: str) -> dict:
         return {"error": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Parse camt.05x statement XML", annotations=_PURE_READ)
 def parse_statement(xml: str) -> dict:
-    """Parse an incoming camt.05x statement into plain data.
+    """Parse an incoming camt.05x statement XML string into structured data.
+
+    Use this to turn a raw statement into a navigable dict (header, statements,
+    accounts, balances, entries). To pull just the flat entry list use
+    ``list_entries``; to only check the document is schema-valid use
+    ``validate_statement``.
 
     Returns the parsed document as a JSON-serialisable dict (group header plus
     statements, each with its account, balances, and entries), or an
@@ -214,9 +276,14 @@ def parse_statement(xml: str) -> dict:
         return {"error": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Validate statement against XSD", annotations=_PURE_READ)
 def validate_statement(xml: str) -> dict:
-    """Validate an incoming camt.05x statement against its XSD schema.
+    """Validate an incoming camt.05x statement XML against its XSD schema.
+
+    Use this to confirm a document is well-formed and schema-valid before
+    processing it. This checks XSD conformance only; for the Nov 2026 CBPR+
+    business rules use ``check_cbpr_readiness``, and to extract the data use
+    ``parse_statement``.
 
     Detects the document's message type, validates it against the matching
     ISO 20022 schema, and returns a report ``{"valid": bool, "message_type":
@@ -236,9 +303,14 @@ def validate_statement(xml: str) -> dict:
         return {"error": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Check CBPR+ Nov 2026 readiness", annotations=_PURE_READ)
 def check_cbpr_readiness(xml: str) -> dict:
-    """Check a camt.053 statement against the CBPR+ Nov 2026 rules.
+    """Check a camt.053 statement against the CBPR+ Nov 2026 acceptance rules.
+
+    Use this to audit a statement for the business-rule changes (schema
+    version, structured postal addresses) enforced from the Nov 2026 cutover.
+    For plain XSD schema validity use ``validate_statement`` instead; for just
+    the cutover date use ``get_cbpr_cutover_date``.
 
     A coordinated CBPR+ / Fedwire / CHAPS / T2 cutover lands on
     **14-16 November 2026**: unstructured-only postal addresses get rejected,
@@ -271,9 +343,13 @@ def check_cbpr_readiness(xml: str) -> dict:
         return {"error": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Get CBPR+ cutover date", annotations=_PURE_READ)
 def get_cbpr_cutover_date() -> dict:
     """Return the official CBPR+ / Nov 2026 cutover date as ISO 8601.
+
+    Use this to quote the enforcement date directly, without parsing a
+    document. To actually audit a statement against the rules that take effect
+    on that date, call ``check_cbpr_readiness`` instead.
 
     The cutover (``2026-11-16``) is the date after which the rules checked
     by ``check_cbpr_readiness`` are enforced by the major clearing systems;
@@ -284,9 +360,13 @@ def get_cbpr_cutover_date() -> dict:
     return {"cutover_date": CBPR_CUTOVER_DATE}
 
 
-@server.tool()
+@server.tool(title="Cite payments rulebook clause", annotations=_PURE_READ)
 def cite_rulebook(scheme: str, version: str, clause: str) -> dict:
-    """Return a curated payments-rulebook citation.
+    """Return a curated payments-rulebook citation for a single clause.
+
+    Use this to quote one specific rule (with its canonical source URL) once
+    you know the ``scheme``/``version``/``clause``. To discover which clauses
+    exist first, call ``list_rulebook_clauses``.
 
     Looks up one well-known rule across the SEPA, CBPR+, and HVPS+
     rulebooks and returns a short summary together with the canonical
@@ -315,11 +395,14 @@ def cite_rulebook(scheme: str, version: str, clause: str) -> dict:
     return rulebook.cite(scheme, version, clause)
 
 
-@server.tool()
+@server.tool(title="List rulebook clauses", annotations=_PURE_READ)
 def list_rulebook_clauses(
     scheme: str | None = None, version: str | None = None
 ) -> list[dict]:
-    """List the curated rulebook citations the server knows about.
+    """List the curated rulebook clauses the server can cite, optionally filtered.
+
+    Use this to browse the citation registry and pick a ``clause`` id; then pass
+    that id to ``cite_rulebook`` to fetch the full summary and source URL.
 
     Returns the full registry, optionally filtered by ``scheme`` and /
     or ``version``. Use the resulting ``clause`` values as input to
@@ -334,9 +417,16 @@ def list_rulebook_clauses(
     return rulebook.list_clauses(scheme=scheme, version=version)
 
 
-@server.tool()
+@server.tool(
+    title="Export statement to journal entries", annotations=_PURE_READ
+)
 def export_journal(xml: str, target: str = "xero") -> dict:
-    """Export a parsed camt.053 statement as accounting-platform journal entries.
+    """Export a camt.053 statement as accounting-platform journal-entry payloads.
+
+    Use this to reshape a statement's booked entries into ready-to-POST Xero or
+    QuickBooks payloads (the tool builds the payloads only; it does not call any
+    external API or write files). To discover the valid ``target`` values first,
+    call ``list_export_journal_targets``.
 
     Parses the supplied statement and re-shapes every booked entry
     into a target-specific journal-entry payload ready for direct
@@ -373,9 +463,13 @@ def export_journal(xml: str, target: str = "xero") -> dict:
     return _export_journal.export(xml, target)
 
 
-@server.tool()
+@server.tool(title="List journal export targets", annotations=_PURE_READ)
 def list_export_journal_targets() -> list[str]:
     """List the accounting-platform targets the ``export_journal`` tool supports.
+
+    Use this to tell a user which ``target`` values ``export_journal`` accepts
+    before invoking it. This lists export destinations only; for the LLM
+    classifier's category vocabulary use ``list_classify_entry_categories``.
 
     Returns the sorted list of valid ``target`` arguments accepted by
     ``export_journal`` (``["qbo", "xero"]`` today). NetSuite and SAP
@@ -384,13 +478,19 @@ def list_export_journal_targets() -> list[str]:
     return sorted(_export_journal.SUPPORTED_TARGETS)
 
 
-@server.tool()
+@server.tool(title="Classify entry via LLM sampling", annotations=_SAMPLING)
 async def classify_entry(
     ctx: Context,
     entry: dict,
     categories: list[str] | None = None,
 ) -> dict:
-    """Classify a statement entry via MCP Sampling (D3 in #17).
+    """Classify one statement entry into a category via MCP LLM Sampling.
+
+    Use this when you want a semantic, model-driven label for an entry (payroll,
+    fee, refund, …) rather than a deterministic rule match. Because it delegates
+    an LLM completion to the client it is open-world and non-idempotent; for the
+    fixed candidate categories it chooses from, call
+    ``list_classify_entry_categories`` first.
 
     Uses the **MCP Sampling** protocol primitive: the server (this
     process) asks the *client* (the agent's host application) to
@@ -423,9 +523,13 @@ async def classify_entry(
     return await classify.classify_entry(ctx, entry, categories)
 
 
-@server.tool()
+@server.tool(title="List classifier categories", annotations=_PURE_READ)
 def list_classify_entry_categories() -> list[str]:
-    """List the default categories the ``classify_entry`` tool uses.
+    """List the default candidate categories the ``classify_entry`` tool uses.
+
+    Use this to quote the built-in category vocabulary to a user before running
+    the LLM classifier. This is a static list lookup (no model call); to
+    actually classify an entry, call ``classify_entry``.
 
     Operators can override the list per call; this tool exposes the
     default the prompt template ships with so an agent can quote them
@@ -434,13 +538,17 @@ def list_classify_entry_categories() -> list[str]:
     return list(classify.DEFAULT_CATEGORIES)
 
 
-@server.tool()
+@server.tool(title="List all statement entries", annotations=_PURE_READ)
 def list_entries(
     xml: str,
     offset: int = 0,
     limit: int | None = None,
 ) -> list[dict] | dict[str, Any]:
-    """Return every statement entry across all of a statement's statements.
+    """List every booked entry across all statements in a camt.05x document.
+
+    Use this to get the flat, paginable entry list from a statement. To keep
+    only the entries carrying a given return-reason code use ``filter_entries``;
+    for the full nested document structure use ``parse_statement``.
 
     When ``limit`` is ``None`` (the default) the full list of entries is
     returned. When ``limit`` is given, a paginated envelope ``{"total",
@@ -462,14 +570,18 @@ def list_entries(
     return _paginate(entries, offset, limit)
 
 
-@server.tool()
+@server.tool(title="Filter entries by reason code", annotations=_PURE_READ)
 def filter_entries(
     xml: str,
     reason_code: str = "AC04",
     offset: int = 0,
     limit: int | None = None,
 ) -> list[dict] | dict[str, Any]:
-    """Return the statement entries carrying a given return reason code.
+    """List only the statement entries carrying a given return reason code.
+
+    Use this to preview exactly which entries a reversal would touch before
+    calling ``generate_reversal`` with the same ``reason_code``. For every entry
+    regardless of reason code use ``list_entries`` instead.
 
     When ``limit`` is ``None`` (the default) the full list of matching entries
     is returned, preserving the behaviour expected by existing callers. When
@@ -494,9 +606,14 @@ def filter_entries(
     return _paginate(entries, offset, limit)
 
 
-@server.tool()
+@server.tool(title="Generate reversal document", annotations=_PURE_READ)
 def generate_reversal(xml: str, reason_code: str = "AC04") -> str:
-    """Read a statement and generate a validated reversing-entry document.
+    """Generate a validated camt.053.001.14 reversal document from a statement.
+
+    This is the headline one-shot workflow: pass an incoming statement and a
+    return-reason code and get back the reversal XML (nothing is written to
+    disk). Preview which entries will be reversed first with ``filter_entries``
+    using the same ``reason_code``.
 
     This is the headline one-shot workflow: parse the incoming camt.053, pick
     the entries with the requested return reason (e.g. AC04 Closed Account),
@@ -516,7 +633,7 @@ def generate_reversal(xml: str, reason_code: str = "AC04") -> str:
         return json.dumps({"error": str(exc)})
 
 
-@server.resource("camt053://return-reasons")
+@server.resource("camt053://return-reasons", title="Return reason catalog")
 def return_reason_catalog() -> str:
     """Expose the ISO external return-reason catalog as a JSON resource.
 
@@ -533,7 +650,7 @@ def return_reason_catalog() -> str:
         return json.dumps({"error": str(exc)})
 
 
-@server.resource("camt053://message-types")
+@server.resource("camt053://message-types", title="Message type catalog")
 def message_type_catalog() -> str:
     """Expose the supported camt.05x message types as a JSON resource.
 
@@ -550,7 +667,10 @@ def message_type_catalog() -> str:
         return json.dumps({"error": str(exc)})
 
 
-@server.resource("camt053://session/{session_id}/bank/{bic}")
+@server.resource(
+    "camt053://session/{session_id}/bank/{bic}",
+    title="Bank session context",
+)
 def bank_session_context(session_id: str, bic: str) -> str:
     """Stable per-session, per-bank context for multi-bank workflows.
 
@@ -650,7 +770,7 @@ def _bank_session_payload(session_id: str, bic: str) -> dict[str, Any]:
     }
 
 
-@server.prompt()
+@server.prompt(title="Preview and confirm a reversal")
 def reversal_preview(
     reason_code: str = "AC04",
 ) -> list[UserMessage | AssistantMessage]:
@@ -692,7 +812,7 @@ def reversal_preview(
     ]
 
 
-@server.prompt()
+@server.prompt(title="Reconcile against pain.001 batch")
 def reconcile_against_pain001() -> list[UserMessage | AssistantMessage]:
     """Guide an agent through reconciling a camt.053 statement against a pain.001 batch.
 
@@ -736,7 +856,7 @@ def reconcile_against_pain001() -> list[UserMessage | AssistantMessage]:
     ]
 
 
-@server.prompt()
+@server.prompt(title="Find duplicate entries")
 def find_duplicate_entries() -> list[UserMessage | AssistantMessage]:
     """Guide an agent through finding duplicate entries within a statement.
 
@@ -779,7 +899,7 @@ def find_duplicate_entries() -> list[UserMessage | AssistantMessage]:
     ]
 
 
-@server.prompt()
+@server.prompt(title="Match entries to invoices")
 def match_to_invoice_set() -> list[UserMessage | AssistantMessage]:
     """Guide an agent through matching statement entries to a set of invoices.
 

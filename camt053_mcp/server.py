@@ -55,7 +55,7 @@ The server communicates over stdio (FastMCP's default transport).
 """
 
 import json
-from typing import Any
+from typing import Annotated, Any
 
 from camt053 import services
 from camt053.compliance import (
@@ -68,6 +68,7 @@ from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from camt053_mcp import __version__, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
@@ -179,7 +180,18 @@ def list_return_reasons() -> list[dict]:
 
 
 @server.tool(title="Get required input fields", annotations=_PURE_READ)
-def get_required_fields(message_type: str) -> list[str]:
+def get_required_fields(
+    message_type: Annotated[
+        str,
+        Field(
+            description=(
+                "A supported ISO 20022 camt.05x message type string, e.g. "
+                "'camt.053.001.14'. Call list_message_types first to discover "
+                "the exact accepted values."
+            )
+        ),
+    ],
+) -> list[str]:
     """List only the required input field names for a camt message type.
 
     Use this for a quick checklist of the mandatory columns before building
@@ -196,7 +208,18 @@ def get_required_fields(message_type: str) -> list[str]:
 
 
 @server.tool(title="Get input JSON Schema", annotations=_PURE_READ)
-def get_input_schema(message_type: str) -> dict:
+def get_input_schema(
+    message_type: Annotated[
+        str,
+        Field(
+            description=(
+                "A supported ISO 20022 camt.05x message type string, e.g. "
+                "'camt.053.001.14'. Call list_message_types first to discover "
+                "the exact accepted values."
+            )
+        ),
+    ],
+) -> dict:
     """Return the full JSON Schema for a message type's flat input record.
 
     Use this to learn every field, its type, and its constraints before
@@ -214,7 +237,29 @@ def get_input_schema(message_type: str) -> dict:
 
 
 @server.tool(title="Validate records against schema", annotations=_PURE_READ)
-def validate_records(message_type: str, records: list[dict]) -> dict:
+def validate_records(
+    message_type: Annotated[
+        str,
+        Field(
+            description=(
+                "A supported ISO 20022 camt.05x message type string, e.g. "
+                "'camt.053.001.14', whose input JSON Schema the records are "
+                "checked against. Call list_message_types to discover accepted "
+                "values and get_input_schema to see the constraints."
+            )
+        ),
+    ],
+    records: Annotated[
+        list[dict],
+        Field(
+            description=(
+                "One or more flat reversing-entry records (each a dict of "
+                "field name to value) to validate row-by-row against the "
+                "message type's input JSON Schema."
+            )
+        ),
+    ],
+) -> dict:
     """Validate flat records against a message type's input JSON Schema.
 
     Use this on in-memory reversing-entry records to catch structural/type
@@ -235,7 +280,28 @@ def validate_records(message_type: str, records: list[dict]) -> dict:
 
 
 @server.tool(title="Validate IBAN, BIC or LEI", annotations=_PURE_READ)
-def validate_identifier(kind: str, value: str) -> dict:
+def validate_identifier(
+    kind: Annotated[
+        str,
+        Field(
+            description=(
+                "The identifier type to validate: one of 'iban', 'bic', or "
+                "'lei' (case-insensitive)."
+            )
+        ),
+    ],
+    value: Annotated[
+        str,
+        Field(
+            description=(
+                "The identifier value to check, matching the chosen kind "
+                "(e.g. an IBAN, an 8- or 11-character BIC, or a 20-character "
+                "LEI). Whitespace/case handling follows the underlying "
+                "validator."
+            )
+        ),
+    ],
+) -> dict:
     """Validate a single financial identifier (IBAN, BIC, or LEI).
 
     Use this for a one-off identifier check with a clear pass/fail. To validate
@@ -255,7 +321,18 @@ def validate_identifier(kind: str, value: str) -> dict:
 
 
 @server.tool(title="Parse camt.05x statement XML", annotations=_PURE_READ)
-def parse_statement(xml: str) -> dict:
+def parse_statement(
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.05x statement XML document as a string, with its "
+                "root camt <Document> element. Returned verbatim from the bank; "
+                "no file path is accepted."
+            )
+        ),
+    ],
+) -> dict:
     """Parse an incoming camt.05x statement XML string into structured data.
 
     Use this to turn a raw statement into a navigable dict (header, statements,
@@ -277,7 +354,18 @@ def parse_statement(xml: str) -> dict:
 
 
 @server.tool(title="Validate statement against XSD", annotations=_PURE_READ)
-def validate_statement(xml: str) -> dict:
+def validate_statement(
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.05x statement XML document as a string, with its "
+                "root camt <Document> element. Validated against the matching "
+                "ISO 20022 XSD; no file path is accepted."
+            )
+        ),
+    ],
+) -> dict:
     """Validate an incoming camt.05x statement XML against its XSD schema.
 
     Use this to confirm a document is well-formed and schema-valid before
@@ -304,7 +392,19 @@ def validate_statement(xml: str) -> dict:
 
 
 @server.tool(title="Check CBPR+ Nov 2026 readiness", annotations=_PURE_READ)
-def check_cbpr_readiness(xml: str) -> dict:
+def check_cbpr_readiness(
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.05x statement XML document as a string, audited "
+                "against the CBPR+ Nov 2026 acceptance rules (schema version "
+                "and structured postal addresses). Rejected by the hardened "
+                "pre-flight if it carries a DOCTYPE/ENTITY or is oversized."
+            )
+        ),
+    ],
+) -> dict:
     """Check a camt.053 statement against the CBPR+ Nov 2026 acceptance rules.
 
     Use this to audit a statement for the business-rule changes (schema
@@ -361,7 +461,35 @@ def get_cbpr_cutover_date() -> dict:
 
 
 @server.tool(title="Cite payments rulebook clause", annotations=_PURE_READ)
-def cite_rulebook(scheme: str, version: str, clause: str) -> dict:
+def cite_rulebook(
+    scheme: Annotated[
+        str,
+        Field(
+            description=(
+                "The rulebook scheme to cite: one of 'SEPA', 'CBPR+', or "
+                "'HVPS+' (case-sensitive)."
+            )
+        ),
+    ],
+    version: Annotated[
+        str,
+        Field(
+            description=(
+                "The rulebook version, e.g. '2025' or '2026'. Use "
+                "list_rulebook_clauses to see which versions exist per scheme."
+            )
+        ),
+    ],
+    clause: Annotated[
+        str,
+        Field(
+            description=(
+                "A kebab-case clause identifier (e.g. 'iban-only') as returned "
+                "by list_rulebook_clauses for the chosen scheme and version."
+            )
+        ),
+    ],
+) -> dict:
     """Return a curated payments-rulebook citation for a single clause.
 
     Use this to quote one specific rule (with its canonical source URL) once
@@ -397,7 +525,24 @@ def cite_rulebook(scheme: str, version: str, clause: str) -> dict:
 
 @server.tool(title="List rulebook clauses", annotations=_PURE_READ)
 def list_rulebook_clauses(
-    scheme: str | None = None, version: str | None = None
+    scheme: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Restrict the listing to one scheme ('SEPA', 'CBPR+', or "
+                "'HVPS+'). None (the default) returns clauses for all schemes."
+            )
+        ),
+    ] = None,
+    version: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Restrict the listing to one rulebook version, e.g. '2026'. "
+                "None (the default) returns clauses for all versions."
+            )
+        ),
+    ] = None,
 ) -> list[dict]:
     """List the curated rulebook clauses the server can cite, optionally filtered.
 
@@ -420,7 +565,28 @@ def list_rulebook_clauses(
 @server.tool(
     title="Export statement to journal entries", annotations=_PURE_READ
 )
-def export_journal(xml: str, target: str = "xero") -> dict:
+def export_journal(
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.053 statement XML document as a string; its "
+                "booked entries are reshaped into journal-entry payloads."
+            )
+        ),
+    ],
+    target: Annotated[
+        str,
+        Field(
+            description=(
+                "The accounting platform to shape payloads for: 'xero' "
+                "(BankTransactions) or 'qbo' (QuickBooks Online JournalEntry). "
+                "Defaults to 'xero'; call list_export_journal_targets for the "
+                "current valid values."
+            )
+        ),
+    ] = "xero",
+) -> dict:
     """Export a camt.053 statement as accounting-platform journal-entry payloads.
 
     Use this to reshape a statement's booked entries into ready-to-POST Xero or
@@ -481,8 +647,25 @@ def list_export_journal_targets() -> list[str]:
 @server.tool(title="Classify entry via LLM sampling", annotations=_SAMPLING)
 async def classify_entry(
     ctx: Context,
-    entry: dict,
-    categories: list[str] | None = None,
+    entry: Annotated[
+        dict,
+        Field(
+            description=(
+                "A single statement entry dict, in the shape returned by "
+                "parse_statement / list_entries, to classify into one category."
+            )
+        ),
+    ],
+    categories: Annotated[
+        list[str] | None,
+        Field(
+            description=(
+                "The candidate categories the model must choose exactly one "
+                "from. None (the default) uses the built-in default list "
+                "exposed by list_classify_entry_categories."
+            )
+        ),
+    ] = None,
 ) -> dict:
     """Classify one statement entry into a category via MCP LLM Sampling.
 
@@ -540,9 +723,35 @@ def list_classify_entry_categories() -> list[str]:
 
 @server.tool(title="List all statement entries", annotations=_PURE_READ)
 def list_entries(
-    xml: str,
-    offset: int = 0,
-    limit: int | None = None,
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.05x statement XML document as a string; every "
+                "booked entry across all its statements is returned."
+            )
+        ),
+    ],
+    offset: Annotated[
+        int,
+        Field(
+            description=(
+                "Zero-based index of the first entry to return. Applies only "
+                "when limit is given; must be non-negative. Defaults to 0."
+            )
+        ),
+    ] = 0,
+    limit: Annotated[
+        int | None,
+        Field(
+            description=(
+                "Maximum number of entries to return, starting at offset. None "
+                "(the default) returns the full unpaginated list; a non-None "
+                "value returns a {total, offset, limit, entries} envelope. Must "
+                "be non-negative."
+            )
+        ),
+    ] = None,
 ) -> list[dict] | dict[str, Any]:
     """List every booked entry across all statements in a camt.05x document.
 
@@ -572,10 +781,46 @@ def list_entries(
 
 @server.tool(title="Filter entries by reason code", annotations=_PURE_READ)
 def filter_entries(
-    xml: str,
-    reason_code: str = "AC04",
-    offset: int = 0,
-    limit: int | None = None,
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.05x statement XML document as a string; only its "
+                "entries carrying the given return reason code are returned."
+            )
+        ),
+    ],
+    reason_code: Annotated[
+        str,
+        Field(
+            description=(
+                "The ISO external return reason code to match, e.g. 'AC04' "
+                "Closed Account (the default). Call list_return_reasons for the "
+                "full set of accepted codes."
+            )
+        ),
+    ] = "AC04",
+    offset: Annotated[
+        int,
+        Field(
+            description=(
+                "Zero-based index of the first matching entry to return. "
+                "Applies only when limit is given; must be non-negative. "
+                "Defaults to 0."
+            )
+        ),
+    ] = 0,
+    limit: Annotated[
+        int | None,
+        Field(
+            description=(
+                "Maximum number of matching entries to return, starting at "
+                "offset. None (the default) returns the full unpaginated list; "
+                "a non-None value returns a {total, offset, limit, entries} "
+                "envelope. Must be non-negative."
+            )
+        ),
+    ] = None,
 ) -> list[dict] | dict[str, Any]:
     """List only the statement entries carrying a given return reason code.
 
@@ -607,7 +852,29 @@ def filter_entries(
 
 
 @server.tool(title="Generate reversal document", annotations=_PURE_READ)
-def generate_reversal(xml: str, reason_code: str = "AC04") -> str:
+def generate_reversal(
+    xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw incoming camt.053 statement XML document as a string; "
+                "the entries carrying reason_code are reversed into a new "
+                "camt.053.001.14 document."
+            )
+        ),
+    ],
+    reason_code: Annotated[
+        str,
+        Field(
+            description=(
+                "The ISO external return reason code whose entries are "
+                "reversed, e.g. 'AC04' Closed Account (the default). Preview "
+                "the matches with filter_entries using the same code; call "
+                "list_return_reasons for all accepted codes."
+            )
+        ),
+    ] = "AC04",
+) -> str:
     """Generate a validated camt.053.001.14 reversal document from a statement.
 
     This is the headline one-shot workflow: pass an incoming statement and a
@@ -671,7 +938,28 @@ def message_type_catalog() -> str:
     "camt053://session/{session_id}/bank/{bic}",
     title="Bank session context",
 )
-def bank_session_context(session_id: str, bic: str) -> str:
+def bank_session_context(
+    session_id: Annotated[
+        str,
+        Field(
+            description=(
+                "An opaque, agent-chosen session tag (chat id, workflow id, or "
+                "operator label). The server is stateless and echoes it back; "
+                "it only namespaces the (session, bank) context."
+            )
+        ),
+    ],
+    bic: Annotated[
+        str,
+        Field(
+            description=(
+                "The bank's BIC8 (head office) or BIC11 (branch) code. Its "
+                "characters 5-6 are read as the ISO 3166-1 country used to "
+                "recommend rulebook clauses."
+            )
+        ),
+    ],
+) -> str:
     """Stable per-session, per-bank context for multi-bank workflows.
 
     A templated MCP Resource that gives an agent a stable URI namespace
@@ -772,7 +1060,16 @@ def _bank_session_payload(session_id: str, bic: str) -> dict[str, Any]:
 
 @server.prompt(title="Preview and confirm a reversal")
 def reversal_preview(
-    reason_code: str = "AC04",
+    reason_code: Annotated[
+        str,
+        Field(
+            description=(
+                "The ISO external return reason code the generated guidance "
+                "previews and reverses, e.g. 'AC04' Closed Account (the "
+                "default). Call list_return_reasons for all accepted codes."
+            )
+        ),
+    ] = "AC04",
 ) -> list[UserMessage | AssistantMessage]:
     """Guide an agent through previewing and confirming a reversal.
 

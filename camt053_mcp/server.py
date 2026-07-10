@@ -64,6 +64,7 @@ from camt053.compliance import (
 from camt053.compliance import (
     check_cbpr_readiness as _check_cbpr_readiness,
 )
+from camt053.constants import return_reason_names, valid_xml_types
 from camt053.exceptions import Camt053Error
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
@@ -109,6 +110,89 @@ _SAMPLING = ToolAnnotations(
     idempotentHint=False,
     openWorldHint=True,
 )
+
+
+# ---------------------------------------------------------------------------
+# Value-constraint enums for closed-set tool parameters.
+#
+# Each alias below pins a parameter whose valid values are a fixed,
+# enumerable, closed set to exactly that set, derived from the library's own
+# source of truth so the advertised schema can never drift from what the
+# runtime actually accepts. The ``enum`` is pure JSON-Schema metadata
+# surfaced to MCP clients (for validation hints and autocomplete); the
+# underlying ``camt053.services`` / module guards keep doing the real
+# runtime validation, so behaviour is unchanged.
+# ---------------------------------------------------------------------------
+
+_MESSAGE_TYPE_VALUES: list[str] = sorted(valid_xml_types)
+_MESSAGE_TYPE_LIST = ", ".join(f"'{v}'" for v in _MESSAGE_TYPE_VALUES)
+_MessageType = Annotated[
+    str,
+    Field(
+        description=(
+            "A supported ISO 20022 camt.05x message type string. Must be "
+            f"exactly one of: {_MESSAGE_TYPE_LIST} (see list_message_types)."
+        ),
+        json_schema_extra={"enum": _MESSAGE_TYPE_VALUES},
+    ),
+]
+
+_IDENTIFIER_KIND_VALUES: list[str] = sorted(services._IDENTIFIER_VALIDATORS)
+_IDENTIFIER_KIND_LIST = ", ".join(f"'{v}'" for v in _IDENTIFIER_KIND_VALUES)
+_IdentifierKind = Annotated[
+    str,
+    Field(
+        description=(
+            "The financial identifier type to validate (case-insensitive). "
+            f"Must be exactly one of: {_IDENTIFIER_KIND_LIST}."
+        ),
+        json_schema_extra={"enum": _IDENTIFIER_KIND_VALUES},
+    ),
+]
+
+_EXPORT_TARGET_VALUES: list[str] = sorted(_export_journal.SUPPORTED_TARGETS)
+_EXPORT_TARGET_LIST = ", ".join(f"'{v}'" for v in _EXPORT_TARGET_VALUES)
+_ExportTarget = Annotated[
+    str,
+    Field(
+        description=(
+            "The accounting platform to shape journal-entry payloads for. "
+            f"Must be exactly one of: {_EXPORT_TARGET_LIST} (see "
+            "list_export_journal_targets)."
+        ),
+        json_schema_extra={"enum": _EXPORT_TARGET_VALUES},
+    ),
+]
+
+_RULEBOOK_SCHEME_VALUES: list[str] = sorted(
+    {row["scheme"] for row in rulebook.list_clauses()}
+)
+_RULEBOOK_SCHEME_LIST = ", ".join(f"'{v}'" for v in _RULEBOOK_SCHEME_VALUES)
+_RulebookScheme = Annotated[
+    str,
+    Field(
+        description=(
+            "The payments-rulebook scheme to cite (case-sensitive). Must be "
+            f"exactly one of: {_RULEBOOK_SCHEME_LIST} (see "
+            "list_rulebook_clauses)."
+        ),
+        json_schema_extra={"enum": _RULEBOOK_SCHEME_VALUES},
+    ),
+]
+
+_RETURN_REASON_VALUES: list[str] = sorted(return_reason_names)
+_RETURN_REASON_LIST = ", ".join(f"'{v}'" for v in _RETURN_REASON_VALUES)
+_ReturnReasonCode = Annotated[
+    str,
+    Field(
+        description=(
+            "An ISO external return reason code, e.g. 'AC04' Closed Account. "
+            f"Must be exactly one of: {_RETURN_REASON_LIST} (see "
+            "list_return_reasons)."
+        ),
+        json_schema_extra={"enum": _RETURN_REASON_VALUES},
+    ),
+]
 
 
 def _paginate(
@@ -181,16 +265,7 @@ def list_return_reasons() -> list[dict]:
 
 @server.tool(title="Get required input fields", annotations=_PURE_READ)
 def get_required_fields(
-    message_type: Annotated[
-        str,
-        Field(
-            description=(
-                "A supported ISO 20022 camt.05x message type string, e.g. "
-                "'camt.053.001.14'. Call list_message_types first to discover "
-                "the exact accepted values."
-            )
-        ),
-    ],
+    message_type: _MessageType,
 ) -> list[str]:
     """List only the required input field names for a camt message type.
 
@@ -209,16 +284,7 @@ def get_required_fields(
 
 @server.tool(title="Get input JSON Schema", annotations=_PURE_READ)
 def get_input_schema(
-    message_type: Annotated[
-        str,
-        Field(
-            description=(
-                "A supported ISO 20022 camt.05x message type string, e.g. "
-                "'camt.053.001.14'. Call list_message_types first to discover "
-                "the exact accepted values."
-            )
-        ),
-    ],
+    message_type: _MessageType,
 ) -> dict:
     """Return the full JSON Schema for a message type's flat input record.
 
@@ -238,17 +304,7 @@ def get_input_schema(
 
 @server.tool(title="Validate records against schema", annotations=_PURE_READ)
 def validate_records(
-    message_type: Annotated[
-        str,
-        Field(
-            description=(
-                "A supported ISO 20022 camt.05x message type string, e.g. "
-                "'camt.053.001.14', whose input JSON Schema the records are "
-                "checked against. Call list_message_types to discover accepted "
-                "values and get_input_schema to see the constraints."
-            )
-        ),
-    ],
+    message_type: _MessageType,
     records: Annotated[
         list[dict],
         Field(
@@ -281,15 +337,7 @@ def validate_records(
 
 @server.tool(title="Validate IBAN, BIC or LEI", annotations=_PURE_READ)
 def validate_identifier(
-    kind: Annotated[
-        str,
-        Field(
-            description=(
-                "The identifier type to validate: one of 'iban', 'bic', or "
-                "'lei' (case-insensitive)."
-            )
-        ),
-    ],
+    kind: _IdentifierKind,
     value: Annotated[
         str,
         Field(
@@ -462,15 +510,7 @@ def get_cbpr_cutover_date() -> dict:
 
 @server.tool(title="Cite payments rulebook clause", annotations=_PURE_READ)
 def cite_rulebook(
-    scheme: Annotated[
-        str,
-        Field(
-            description=(
-                "The rulebook scheme to cite: one of 'SEPA', 'CBPR+', or "
-                "'HVPS+' (case-sensitive)."
-            )
-        ),
-    ],
+    scheme: _RulebookScheme,
     version: Annotated[
         str,
         Field(
@@ -529,9 +569,11 @@ def list_rulebook_clauses(
         str | None,
         Field(
             description=(
-                "Restrict the listing to one scheme ('SEPA', 'CBPR+', or "
-                "'HVPS+'). None (the default) returns clauses for all schemes."
-            )
+                "Restrict the listing to one scheme. When given, must be "
+                f"exactly one of: {_RULEBOOK_SCHEME_LIST}. None (the default) "
+                "returns clauses for all schemes."
+            ),
+            json_schema_extra={"enum": _RULEBOOK_SCHEME_VALUES},
         ),
     ] = None,
     version: Annotated[
@@ -575,17 +617,7 @@ def export_journal(
             )
         ),
     ],
-    target: Annotated[
-        str,
-        Field(
-            description=(
-                "The accounting platform to shape payloads for: 'xero' "
-                "(BankTransactions) or 'qbo' (QuickBooks Online JournalEntry). "
-                "Defaults to 'xero'; call list_export_journal_targets for the "
-                "current valid values."
-            )
-        ),
-    ] = "xero",
+    target: _ExportTarget = "xero",
 ) -> dict:
     """Export a camt.053 statement as accounting-platform journal-entry payloads.
 
@@ -790,16 +822,7 @@ def filter_entries(
             )
         ),
     ],
-    reason_code: Annotated[
-        str,
-        Field(
-            description=(
-                "The ISO external return reason code to match, e.g. 'AC04' "
-                "Closed Account (the default). Call list_return_reasons for the "
-                "full set of accepted codes."
-            )
-        ),
-    ] = "AC04",
+    reason_code: _ReturnReasonCode = "AC04",
     offset: Annotated[
         int,
         Field(
@@ -863,17 +886,7 @@ def generate_reversal(
             )
         ),
     ],
-    reason_code: Annotated[
-        str,
-        Field(
-            description=(
-                "The ISO external return reason code whose entries are "
-                "reversed, e.g. 'AC04' Closed Account (the default). Preview "
-                "the matches with filter_entries using the same code; call "
-                "list_return_reasons for all accepted codes."
-            )
-        ),
-    ] = "AC04",
+    reason_code: _ReturnReasonCode = "AC04",
 ) -> str:
     """Generate a validated camt.053.001.14 reversal document from a statement.
 
@@ -1060,16 +1073,7 @@ def _bank_session_payload(session_id: str, bic: str) -> dict[str, Any]:
 
 @server.prompt(title="Preview and confirm a reversal")
 def reversal_preview(
-    reason_code: Annotated[
-        str,
-        Field(
-            description=(
-                "The ISO external return reason code the generated guidance "
-                "previews and reverses, e.g. 'AC04' Closed Account (the "
-                "default). Call list_return_reasons for all accepted codes."
-            )
-        ),
-    ] = "AC04",
+    reason_code: _ReturnReasonCode = "AC04",
 ) -> list[UserMessage | AssistantMessage]:
     """Guide an agent through previewing and confirming a reversal.
 

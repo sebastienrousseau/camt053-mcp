@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.11] - 2026-07-12
+
+The **legacy-migration** cut. Adds a Phase-1 wedge for the November 2028
+retirement of SWIFT MT940 customer statements, letting agents lift raw
+MT940 text into the ISO 20022 camt.053 world the rest of the server
+already speaks.
+
+### Added
+
+- **`convert_mt940_to_camt053` tool.** Parses raw legacy SWIFT MT940
+  statement text and returns the equivalent camt.053 structure as
+  JSON-serialisable data, in the same shape `parse_statement` produces
+  (group header plus statements, each with its account, balances, and
+  entries). A thin wrapper over the `camt053-loader-mt940` library's
+  `parse_mt940` — no MT grammar is reimplemented — with the loader's
+  `ParsedDocument` serialised via the same `to_dict()` the other parse
+  tools use, so downstream tools (`list_entries`, `filter_entries`,
+  `classify_entry`, `export_journal`) work on the result unchanged. On a
+  parse failure it returns an `{"error": ...}` payload, matching the
+  server's convention. No file I/O. This brings the server to 20 tools.
+
+### Changed
+
+- **New runtime dependency** `camt053-loader-mt940 >= 0.0.9`, added to
+  `pyproject.toml` and the hash-pinned `requirements/test.txt` /
+  `requirements/lint.txt` so CI resolves and type-checks it.
+
 ## [0.0.10] - 2026-07-02
 
 The **discoverability** cut. Registers `camt053-mcp` with the official

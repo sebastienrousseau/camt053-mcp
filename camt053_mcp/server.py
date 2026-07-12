@@ -67,6 +67,7 @@ from camt053.compliance import (
 from camt053.constants import return_reason_names, valid_xml_types
 from camt053.exceptions import Camt053Error
 from camt053_loader_mt940.loader import parse_mt940
+from camt053_loader_mt942.loader import parse_mt942
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 from mcp.types import ToolAnnotations
@@ -441,6 +442,64 @@ def convert_mt940_to_camt053(
     """
     try:
         return parse_mt940(mt940_text).to_dict()
+    except (ValueError, Camt053Error) as exc:
+        return {"error": str(exc)}
+
+
+@server.tool(title="Convert legacy MT942 to camt.052", annotations=_PURE_READ)
+def convert_mt942(
+    mt942_text: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw legacy SWIFT MT942 interim transaction report text as "
+                "a string (``:20:`` / ``:25:`` / ``:28C:`` / ``:34F:`` / "
+                "``:13D:`` / ``:61:`` / ``:86:`` / ``:90D:`` / ``:90C:`` "
+                "fields). Passed verbatim from the bank or ERP; no file path is "
+                "accepted."
+            )
+        ),
+    ],
+) -> dict:
+    """Convert a legacy SWIFT MT942 interim report into a camt.052 structure.
+
+    Use this as the Phase-1 migration wedge for intraday reporting: SWIFT MT94x
+    messages retire in **November 2028**, so this tool bridges the gap by
+    turning raw MT942 *Interim Transaction Report* text into the same
+    JSON-serialisable camt.052 (Bank-to-Customer Account **Report**) document
+    shape the server's parse tools return (group header plus statements, each
+    with its account, balances, and entries). MT942 is the intraday sibling of
+    MT940: where MT940 maps to camt.053 (end-of-day statement), MT942 maps to
+    camt.052, so the resulting ``message_type`` is ``camt.052.001.08``.
+    Downstream tools (``list_entries``, ``filter_entries``, ``classify_entry``,
+    ``export_journal``) then work on the result unchanged.
+
+    Wraps the ``camt053-loader-mt942`` library's ``parse_mt942``; the MT parsing
+    itself is delegated (no MT grammar is reimplemented here). The resulting
+    ``ParsedDocument`` is serialised with the same ``to_dict()`` the server's
+    other parse tools use, so agents get a consistent structure. Nothing is read
+    from or written to disk.
+
+    **Documented model limitation.** The ``camt053`` typed model is
+    camt.053-statement-oriented: it has no dedicated field for camt.052's
+    floor-limit (``<Lmt>``) or transaction-summary (``<TxsSummry>``) blocks.
+    Rather than drop that data, the loader surfaces it on the balance list using
+    clearly proprietary ``type_code`` values so consumers can recognise and
+    filter them: ``:34F:`` floor limits become ``FLIMD`` / ``FLIMC`` balances,
+    and ``:90D:`` / ``:90C:`` entry-count summaries become ``SUMD:<count>`` /
+    ``SUMC:<count>`` balances (the ISO ``NbOfNtries`` count is encoded after the
+    colon; the sum is the balance ``amount``). See the loader's README.
+
+    Returns the converted document as a JSON-serialisable dict, or an
+    ``{"error": ...}`` payload if the MT942 text cannot be parsed (e.g. a
+    missing ``:20:`` reference or a malformed floor-limit / summary / statement
+    line).
+
+    Args:
+        mt942_text: The raw MT942 interim transaction report text as a string.
+    """
+    try:
+        return parse_mt942(mt942_text).to_dict()
     except (ValueError, Camt053Error) as exc:
         return {"error": str(exc)}
 

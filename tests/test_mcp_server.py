@@ -36,6 +36,7 @@ EXPECTED_TOOLS = {
     "validate_identifier",
     "validate_statement",
     "convert_mt940_to_camt053",
+    "convert_mt942",
     "check_cbpr_readiness",
     "get_cbpr_cutover_date",
     "cite_rulebook",
@@ -573,6 +574,66 @@ def test_convert_mt940_malformed_returns_error():
     result = server.convert_mt940_to_camt053(
         ":25:DE89370400440532013000\n:60F:C260620EUR1000,00\n"
     )
+    assert isinstance(result, dict)
+    assert "error" in result
+    assert ":20:" in result["error"]
+
+
+# ─── MT942 → camt.052 migration tool (Nov 2028 MT94x retirement) ────────────
+
+# A minimal but complete legacy SWIFT MT942 interim transaction report: a
+# debit + credit floor limit (:34F:), a :13D: report timestamp, a EUR 500.00
+# credit and a EUR 200.00 debit (each with an :86: info line), and debit /
+# credit entry-count summaries (:90D: / :90C:). Mirrors the
+# camt053-loader-mt942 fixture.
+_MT942_SAMPLE = (
+    ":20:INTRA-1\n"
+    ":25:COBADEFFXXX/DE89370400440532013000\n"
+    ":28C:42/1\n"
+    ":34F:EURD1000,00\n"
+    ":34F:EURC500,00\n"
+    ":13D:2606211430+0200\n"
+    ":61:2606210621CR500,00NMSCREF1//CREF1\n"
+    ":86:Customer payment\n"
+    ":61:2606210621D200,00NMSCREF2//CREF2\n"
+    ":86:Card settlement\n"
+    ":90D:1EUR200,00\n"
+    ":90C:1EUR500,00\n"
+)
+
+
+def test_convert_mt942_returns_camt052_structure():
+    """A valid MT942 payload converts to a camt.052 document dict."""
+    result = server.convert_mt942(_MT942_SAMPLE)
+    assert isinstance(result, dict)
+    assert "error" not in result
+    # MT942 maps to camt.052 (Account Report), not camt.053.
+    assert result["message_type"].startswith("camt.052.")
+    assert result["message_type"] == "camt.052.001.08"
+    assert result["msg_id"] == "INTRA-1"
+    # The :13D: timestamp becomes the report creation date/time.
+    assert result["creation_date_time"] == "2026-06-21T14:30:00+02:00"
+    assert len(result["statements"]) == 1
+    statement = result["statements"][0]
+    # Floor limits (:34F:) and entry summaries (:90D: / :90C:) surface as
+    # proprietary-type_code balances the model has no native field for.
+    types = [b["type_code"] for b in statement["balances"]]
+    assert types == ["FLIMD", "FLIMC", "SUMD:1", "SUMC:1"]
+    assert statement["balances"][0]["amount"] == "1000.00"
+    assert statement["balances"][0]["currency"] == "EUR"
+    # Entries: the two :61: lines become booked entries.
+    entries = statement["entries"]
+    assert len(entries) == 2
+    assert entries[0]["amount"] == "500.00"
+    assert entries[0]["credit_debit_indicator"] == "CRDT"
+    assert entries[1]["credit_debit_indicator"] == "DBIT"
+    # The whole structure is JSON-serialisable, like the other parse tools.
+    assert json.loads(json.dumps(result)) == result
+
+
+def test_convert_mt942_malformed_returns_error():
+    """Malformed MT942 (missing :20:) yields an ``{"error": ...}`` dict."""
+    result = server.convert_mt942(":25:DE89370400440532013000\n:28C:42/1\n")
     assert isinstance(result, dict)
     assert "error" in result
     assert ":20:" in result["error"]

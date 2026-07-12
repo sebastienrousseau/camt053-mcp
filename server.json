@@ -6,12 +6,12 @@
     "url": "https://github.com/sebastienrousseau/camt053-mcp",
     "source": "github"
   },
-  "version": "0.0.11",
+  "version": "0.0.12",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "camt053-mcp",
-      "version": "0.0.11",
+      "version": "0.0.12",
       "transport": {
         "type": "stdio"
       }

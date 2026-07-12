@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.12] - 2026-07-12
+
+The **intraday-migration** cut. Extends the Phase-1 wedge for the
+November 2028 retirement of the SWIFT MT94x family to the intraday
+sibling of MT940, letting agents lift raw MT942 *Interim Transaction
+Report* text into the ISO 20022 camt.052 world the rest of the server
+already speaks.
+
+### Added
+
+- **`convert_mt942` tool.** Parses raw legacy SWIFT MT942 interim
+  transaction report text and returns the equivalent camt.052
+  (Bank-to-Customer Account **Report**) structure as JSON-serialisable
+  data, in the same shape `parse_statement` produces (group header plus
+  statements, each with its account, balances, and entries). Where
+  `convert_mt940_to_camt053` maps end-of-day MT940 to camt.053, this
+  maps intraday MT942 to camt.052 (`message_type` `camt.052.001.08`). A
+  thin wrapper over the `camt053-loader-mt942` library's `parse_mt942`
+  — no MT grammar is reimplemented — with the loader's `ParsedDocument`
+  serialised via the same `to_dict()` the other parse tools use, so
+  downstream tools (`list_entries`, `filter_entries`, `classify_entry`,
+  `export_journal`) work on the result unchanged. Documented model
+  limitation: the camt.053-oriented typed model has no native
+  floor-limit (`<Lmt>`) or transaction-summary (`<TxsSummry>`) field, so
+  `:34F:` floor limits surface as `FLIMD` / `FLIMC` balances and `:90D:`
+  / `:90C:` entry-count summaries as `SUMD:<count>` / `SUMC:<count>`
+  balances (see the loader's README). On a parse failure it returns an
+  `{"error": ...}` payload, matching the server's convention. No file
+  I/O. This brings the server to 21 tools.
+
+### Changed
+
+- **New runtime dependency** `camt053-loader-mt942 >= 0.0.1`, added to
+  `pyproject.toml` and the hash-pinned `requirements/test.txt` /
+  `requirements/lint.txt` / `requirements/fuzz.txt` so CI resolves,
+  type-checks, and fuzzes it.
+
 ## [0.0.11] - 2026-07-12
 
 The **legacy-migration** cut. Adds a Phase-1 wedge for the November 2028

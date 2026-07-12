@@ -149,6 +149,7 @@ identically to the CLI and REST API.
 | `validate_identifier` | Validate an IBAN, BIC, or LEI |
 | `validate_statement` | Validate a statement against its XSD and detect its type |
 | `convert_mt940_to_camt053` | MT940 → camt.053 migration: convert legacy SWIFT MT940 statement text into a camt.053 structure |
+| `convert_mt942` | MT942 → camt.052 migration: convert legacy SWIFT MT942 interim transaction report text into a camt.052 structure |
 | `check_cbpr_readiness` | Flag CBPR+ Nov 2026 cliff issues in a statement |
 | `get_cbpr_cutover_date` | Return the official CBPR+ cutover date (2026-11-16) |
 | `cite_rulebook` | Quote a curated SEPA / CBPR+ / HVPS+ rulebook clause |

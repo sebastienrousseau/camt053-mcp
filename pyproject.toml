@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.11"
+version = "0.0.12"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0"
@@ -18,6 +18,7 @@ camt053-mcp = "camt053_mcp.server:main"
 python = ">=3.10,<4.0"
 camt053 = ">=0.0.6,<1"
 camt053-loader-mt940 = ">=0.0.9"
+camt053-loader-mt942 = ">=0.0.1"
 mcp = ">=1.2"
 
 [tool.poetry.group.dev.dependencies]
@@ -118,6 +119,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "camt053_loader_mt940.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "camt053_loader_mt942.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

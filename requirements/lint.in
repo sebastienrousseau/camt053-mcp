@@ -6,6 +6,7 @@
 mcp>=1.2
 camt053>=0.0.6,<1
 camt053-loader-mt940>=0.0.9
+camt053-loader-mt942>=0.0.1
 ruff==0.15.20
 black==26.5.1
 mypy>=1.11,<3.0

@@ -66,6 +66,7 @@ from camt053.compliance import (
 )
 from camt053.constants import return_reason_names, valid_xml_types
 from camt053.exceptions import Camt053Error
+from camt053_loader_mt940.loader import parse_mt940
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 from mcp.types import ToolAnnotations
@@ -397,6 +398,49 @@ def parse_statement(
     """
     try:
         return services.parse_statement(xml)
+    except (ValueError, Camt053Error) as exc:
+        return {"error": str(exc)}
+
+
+@server.tool(title="Convert legacy MT940 to camt.053", annotations=_PURE_READ)
+def convert_mt940_to_camt053(
+    mt940_text: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw legacy SWIFT MT940 statement text as a string "
+                "(``:20:`` / ``:25:`` / ``:28C:`` / ``:60F:`` / ``:61:`` / "
+                "``:86:`` / ``:62F:`` fields). Passed verbatim from the bank or "
+                "ERP; no file path is accepted."
+            )
+        ),
+    ],
+) -> dict:
+    """Convert a legacy SWIFT MT940 statement into a camt.053 structure.
+
+    Use this as the Phase-1 migration wedge: SWIFT MT940 customer statements
+    retire in **November 2028**, so this tool bridges the gap by turning raw
+    MT940 text into the same JSON-serialisable camt.053 document shape that
+    ``parse_statement`` returns (group header plus statements, each with its
+    account, balances, and entries). Downstream tools (``list_entries``,
+    ``filter_entries``, ``classify_entry``, ``export_journal``) then work on the
+    result unchanged.
+
+    Wraps the ``camt053-loader-mt940`` library's ``parse_mt940``; the MT parsing
+    itself is delegated (no MT grammar is reimplemented here). The resulting
+    ``ParsedDocument`` is serialised with the same ``to_dict()`` the server's
+    other parse tools use, so agents get a consistent structure. Nothing is read
+    from or written to disk.
+
+    Returns the converted document as a JSON-serialisable dict, or an
+    ``{"error": ...}`` payload if the MT940 text cannot be parsed (e.g. a
+    missing ``:20:`` reference or a malformed balance / statement line).
+
+    Args:
+        mt940_text: The raw MT940 statement text as a string.
+    """
+    try:
+        return parse_mt940(mt940_text).to_dict()
     except (ValueError, Camt053Error) as exc:
         return {"error": str(exc)}
 

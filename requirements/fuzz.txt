@@ -26,6 +26,12 @@ attrs==26.1.0 \
 camt053==0.0.9 \
     --hash=sha256:6aa8936f21daa79fdf77a961d1e18a31a88698a2359c71407aea43a2dfeda9ac \
     --hash=sha256:8200c5eacfc3e861e98f7de749da8963dafe2d7c8694d7ba17b2fe472ed501f4
+    # via
+    #   -r requirements/fuzz.in
+    #   camt053-loader-mt940
+camt053-loader-mt940==0.0.9 \
+    --hash=sha256:c5b8f8511bfbd089bc79ed79acad646b188200352dd209115c711f981011a87c \
+    --hash=sha256:d8e84bb7f4307db2723406e0c9a106ecbdf732a0b07f037b4903969992e25fc2
     # via -r requirements/fuzz.in
 certifi==2026.6.17 \
     --hash=sha256:024c88eeec92ca068db80f02b8b07c9cef7b9fe261d1d535abfd5abd6f6af432 \

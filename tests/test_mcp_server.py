@@ -35,6 +35,7 @@ EXPECTED_TOOLS = {
     "validate_records",
     "validate_identifier",
     "validate_statement",
+    "convert_mt940_to_camt053",
     "check_cbpr_readiness",
     "get_cbpr_cutover_date",
     "cite_rulebook",
@@ -522,6 +523,59 @@ def test_call_tool_through_fastmcp():
 
     payload = asyncio.run(go())
     assert payload["valid"] is True
+
+
+# ─── MT940 → camt.053 migration tool (Nov 2028 MT940 retirement) ────────────
+
+# A minimal but complete legacy SWIFT MT940 statement: one opening balance,
+# a EUR 500.00 credit and a EUR 200.00 debit, an :86: info line, and closing
+# + closing-available balances. Mirrors the camt053-loader-mt940 fixture.
+_MT940_SAMPLE = (
+    ":20:REF-1\n"
+    ":25:COBADEFFXXX/DE89370400440532013000\n"
+    ":28C:42/1\n"
+    ":60F:C260620EUR1000,00\n"
+    ":61:2606210621CR500,00NMSCREF1//CREF1\n"
+    ":86:Customer payment\n"
+    ":61:2606220622D200,00NMSCREF2//CREF2\n"
+    ":62F:C260622EUR1300,00\n"
+    ":64:C260622EUR1300,00\n"
+)
+
+
+def test_convert_mt940_returns_camt053_structure():
+    """A valid MT940 payload converts to a camt.053 document dict."""
+    result = server.convert_mt940_to_camt053(_MT940_SAMPLE)
+    assert isinstance(result, dict)
+    assert "error" not in result
+    # Same shape parse_statement produces: header + statements.
+    assert result["message_type"] == "camt.053.001.08"
+    assert result["msg_id"] == "REF-1"
+    assert len(result["statements"]) == 1
+    statement = result["statements"][0]
+    # Balances: OPBD / CLBD / CLAV carried across from :60F: / :62F: / :64:.
+    types = [b["type_code"] for b in statement["balances"]]
+    assert types == ["OPBD", "CLBD", "CLAV"]
+    assert statement["balances"][0]["amount"] == "1000.00"
+    assert statement["balances"][0]["currency"] == "EUR"
+    # Entries: the two :61: lines become booked entries.
+    entries = statement["entries"]
+    assert len(entries) == 2
+    assert entries[0]["amount"] == "500.00"
+    assert entries[0]["credit_debit_indicator"] == "CRDT"
+    assert entries[1]["credit_debit_indicator"] == "DBIT"
+    # The whole structure is JSON-serialisable, like the other parse tools.
+    assert json.loads(json.dumps(result)) == result
+
+
+def test_convert_mt940_malformed_returns_error():
+    """Malformed MT940 (missing :20:) yields an ``{"error": ...}`` dict."""
+    result = server.convert_mt940_to_camt053(
+        ":25:DE89370400440532013000\n:60F:C260620EUR1000,00\n"
+    )
+    assert isinstance(result, dict)
+    assert "error" in result
+    assert ":20:" in result["error"]
 
 
 # ─── CBPR+ readiness tool (Nov 14-16 2026 cliff) ────────────────────────────

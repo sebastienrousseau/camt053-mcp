@@ -196,6 +196,42 @@ xmlschema = ">=3.4.0,<4.0.0"
 telemetry = ["opentelemetry-api (>=1.20)"]
 
 [[package]]
+name = "camt053-loader-mt940"
+version = "0.0.9"
+description = "Convert legacy SWIFT MT940 bank statements to camt.053 ParsedDocument."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "camt053_loader_mt940-0.0.9-py3-none-any.whl", hash = "sha256:c5b8f8511bfbd089bc79ed79acad646b188200352dd209115c711f981011a87c"},
+    {file = "camt053_loader_mt940-0.0.9.tar.gz", hash = "sha256:d8e84bb7f4307db2723406e0c9a106ecbdf732a0b07f037b4903969992e25fc2"},
+]
+
+[package.dependencies]
+camt053 = ">=0.0.6,<1"
+
+[package.extras]
+dev = ["interrogate (>=1.7)", "mypy (>=1.11)", "pytest (>=8)", "pytest-cov (>=5)", "ruff (>=0.6)"]
+
+[[package]]
+name = "camt053-loader-mt942"
+version = "0.0.1"
+description = "Convert legacy SWIFT MT942 interim transaction reports to camt.052 ParsedDocument."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "camt053_loader_mt942-0.0.1-py3-none-any.whl", hash = "sha256:9304d5023377660568c5aecf7ee9655e7b377f4184604b84b0ff2584a924b8e2"},
+    {file = "camt053_loader_mt942-0.0.1.tar.gz", hash = "sha256:07cf1afe5f5bb4195a2afbbde7bf423126fa10a185933ac9f5a0e6d020240199"},
+]
+
+[package.dependencies]
+camt053 = ">=0.0.6,<1"
+
+[package.extras]
+dev = ["interrogate (>=1.7)", "mypy (>=1.11)", "pytest (>=8)", "pytest-cov (>=5)", "ruff (>=0.6)"]
+
+[[package]]
 name = "certifi"
 version = "2026.6.17"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -2480,4 +2516,4 @@ docs = ["jinja2", "sphinx", "sphinx_rtd_theme"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "38bc7e5e5c6bd92f9d85620b5956c4cab5623fbd3fcfa94d88b7d304f14cf95d"
+content-hash = "8e47a06e3c38b9f1a12f74029db7200bb2493da1cbad1f14a9876a3522a9027c"

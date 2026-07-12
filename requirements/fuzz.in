@@ -3,3 +3,4 @@
 # being pip-installed, so no un-pinnable local install is needed.
 mcp>=1.2
 camt053>=0.0.6,<1
+camt053-loader-mt940>=0.0.9

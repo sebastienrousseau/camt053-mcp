@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.13] - 2026-07-16
+
+The **multi-tenant transport** cut. Ships D7 (#42, spun off #17): an
+opt-in streamable-HTTP transport with mandatory bearer-token auth and
+per-request tenant scoping, so one shared server instance can serve
+several agents, teams, or tenant accounts — while the stdio default
+stays exactly as it was. Also folds the open dependabot bumps, adds a
+load/stress suite, and aligns the version across the camt053 suite.
+
+### Added
+
+- **HTTP transport (D7).** New `--transport=stdio|http` CLI flag
+  (stdio remains the default; bare `camt053-mcp` is unchanged and
+  needs no token) and `--bind HOST:PORT` option (default
+  `127.0.0.1:8080`, loopback-only so wider exposure is an explicit
+  opt-in). `--transport=http` serves MCP streamable HTTP at
+  `http://HOST:PORT/mcp` via FastMCP + uvicorn.
+- **Bearer-token middleware.** The new `camt053_mcp.transport` module
+  wraps the streamable-HTTP app in a pure-ASGI `BearerTokenMiddleware`:
+  every HTTP request must carry `Authorization: Bearer` matching the
+  `CAMT053_MCP_TOKEN` environment variable (constant-time compare);
+  missing/wrong credentials are rejected `401` with
+  `WWW-Authenticate: Bearer` before reaching the MCP session manager,
+  and the server refuses to start over HTTP without a token.
+- **`Camt053-Account` tenant scoping.** HTTP callers may name their
+  tenant/account scope per request; the header is forwarded into
+  tool-visible context (`camt053_mcp.transport.current_tenant(ctx)`)
+  and echoed by the new **`get_tenant_context` tool** — bringing the
+  server to 22 tools.
+- **Audit attribution.** Structured JSON audit records on the
+  `camt053_mcp.audit` logger, every one carrying the service name
+  (`camt053-mcp`) and the tenant scope, for authorized and rejected
+  requests alike, so multi-tenant calls stay attributable.
+- **Load/stress suite** (`tests/test_stress.py`, marker `stress`,
+  excluded from the default coverage-gated run like the core repo's):
+  32-worker × 400-call sustained-concurrency scenario over the hot
+  tools (zero errors, bounded p95), a 200-iteration tracemalloc soak
+  (bounded heap growth), and 8 parallel authenticated HTTP sessions
+  with per-session tenant attribution.
+- **Docs.** 'Multi-tenant HTTP deployment' section in
+  `docs/quickstart.md` and a new `docs/deployment-cookbook.md` (HTTP
+  service, systemd + nginx TLS, container recipes).
+
+### Changed
+
+- **Dependabot folds.** All three open dependabot PRs applied: #70
+  python-dependencies group (mypy 2.1.0 → 2.3.0, ruff 0.15.20 →
+  0.15.21), #69 github-actions group (6 SHA-pinned action bumps:
+  codeql v4, checkout v7, setup-python v6, setup-node v6), #68
+  clusterfuzzlite `base-builder-python` digest `6768b69` → `8d46cb5`.
+- **Version alignment.** `0.0.13` across `pyproject.toml`,
+  `camt053_mcp/__init__.py`, `server.json`, `glama.json`, and the
+  README, keeping the camt053 suite's releases in step.
+
 ## [0.0.12] - 2026-07-12
 
 The **intraday-migration** cut. Extends the Phase-1 wedge for the

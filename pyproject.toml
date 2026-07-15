@@ -59,6 +59,15 @@ addopts = [
     "--cov-branch",
     "--cov-report=term-missing",
     "--cov-fail-under=100",
+    # Load/stress tests (marker ``stress``) are excluded from the default
+    # coverage-gated run, mirroring the core camt053 repo; benchmarks
+    # (``perf``) are reserved alongside them. Select them explicitly with
+    # ``pytest -m stress --no-cov``.
+    "-m", "not perf and not stress",
+]
+markers = [
+    "perf: performance/benchmark tests (excluded from the coverage gate)",
+    "stress: load/stress and soak tests (excluded from the coverage gate)",
 ]
 
 [tool.coverage.run]

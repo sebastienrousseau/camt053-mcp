@@ -86,8 +86,10 @@ SERVICE_NAME = "camt053-mcp"
 #: The optional HTTP request header naming the tenant/account scope.
 TENANT_HEADER = "Camt053-Account"
 
-#: The environment variable the HTTP transport reads its bearer token from.
-TOKEN_ENV = "CAMT053_MCP_TOKEN"
+#: The environment variable the HTTP transport reads its bearer token
+#: from. The string is the variable's *name*, not a credential, hence
+#: the targeted B105 suppression.
+TOKEN_ENV = "CAMT053_MCP_TOKEN"  # nosec B105
 
 #: The default ``--bind`` for ``--transport=http``: loopback-only, so an
 #: operator must opt in explicitly (e.g. ``0.0.0.0:8080``) to expose the

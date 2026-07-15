@@ -45,6 +45,7 @@ EXPECTED_TOOLS = {
     "list_export_journal_targets",
     "classify_entry",
     "list_classify_entry_categories",
+    "get_tenant_context",
     "parse_statement",
     "list_entries",
     "filter_entries",
@@ -503,7 +504,10 @@ def test_main_runs_server(monkeypatch):
     monkeypatch.setattr(
         server.server, "run", lambda *a, **k: calls.append(True)
     )
-    assert server.main() is None
+    # An explicit empty argv: the bare-call default would parse pytest's
+    # own sys.argv. The transport CLI itself is covered in
+    # tests/test_transport.py.
+    assert server.main([]) is None
     assert calls == [True]
 
 

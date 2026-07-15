@@ -134,6 +134,17 @@ client's configuration:
 The agent can then call the tools below to parse incoming statements and
 generate validated reversing entries on demand.
 
+For a shared, multi-tenant deployment, the server can also serve
+**streamable HTTP** with mandatory bearer-token auth and optional
+per-request `Camt053-Account` tenant scoping:
+
+```sh
+CAMT053_MCP_TOKEN=<secret> camt053-mcp --transport=http --bind=0.0.0.0:8080
+```
+
+See [Multi-tenant HTTP deployment](docs/quickstart.md#6-multi-tenant-http-deployment)
+and the [deployment cookbook](docs/deployment-cookbook.md).
+
 ## Tools
 
 All tools delegate to the shared `camt053.services` layer, so they behave
@@ -158,6 +169,7 @@ identically to the CLI and REST API.
 | `list_export_journal_targets` | List the accounting-platform targets `export_journal` supports |
 | `classify_entry` | Classify a statement entry via MCP Sampling (uses the *client's* LLM) |
 | `list_classify_entry_categories` | List the default categories `classify_entry` uses |
+| `get_tenant_context` | Report the multi-tenant scope of the call (the `Camt053-Account` header on the HTTP transport; `None` over stdio) |
 | `parse_statement` | Parse an incoming camt.05x statement into data |
 | `list_entries` | List every entry across all statements (paginated) |
 | `filter_entries` | Return entries carrying a return reason code (paginated) |

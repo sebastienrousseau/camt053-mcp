@@ -46,7 +46,7 @@ Add an entry to `~/Library/Application Support/Claude/claude_desktop_config.json
 }
 ```
 
-Restart Claude Desktop. The 13 camt053 tools, two resources, and the
+Restart Claude Desktop. The 22 camt053 tools, three resources, and the
 `reversal_preview` prompt are now available in any chat.
 
 ### Other clients (Continue, Cursor, generic stdio MCP clients)
@@ -91,11 +91,87 @@ asyncio.run(main())
 A focused example exists for every tool — `examples/01_list_message_types.py`,
 `examples/02_list_return_reasons.py`, …, `examples/13_generate_reversal.py`.
 
-## 6. Next steps
+## 6. Multi-tenant HTTP deployment
 
-- Browse the full [tool catalog](../README.md#tools) (13 tools across
+Everything above runs the server over **stdio**: one process per
+operator, launched by the MCP client, no network surface, no
+authentication needed. For a *shared* deployment — one server instance
+serving several agents, teams, or tenant accounts — switch to the
+streamable-HTTP transport:
+
+```sh
+export CAMT053_MCP_TOKEN="$(openssl rand -hex 32)"
+camt053-mcp --transport=http --bind=0.0.0.0:8080
+```
+
+- `--transport=http` serves MCP streamable HTTP at `http://HOST:PORT/mcp`.
+  The default remains `--transport=stdio`; existing stdio behaviour is
+  unchanged.
+- `--bind HOST:PORT` picks the listen address (default `127.0.0.1:8080`,
+  loopback-only — exposing the server beyond the host is an explicit
+  opt-in).
+- **Bearer auth is mandatory over HTTP.** The server refuses to start
+  unless `CAMT053_MCP_TOKEN` is set, and every HTTP request must carry
+  `Authorization: Bearer <token>`; a missing or wrong credential is
+  rejected `401` before it reaches the MCP layer. stdio needs no token.
+
+### Tenant scoping with the `Camt053-Account` header
+
+HTTP callers may add an optional `Camt053-Account` header naming the
+tenant/account the session acts for. The value is forwarded into the
+tool-visible context — any tool can resolve it via
+`camt053_mcp.transport.current_tenant(ctx)`, and the
+`get_tenant_context` tool reports it directly:
+
+```sh
+curl -s http://localhost:8080/mcp \
+  -H "Authorization: Bearer $CAMT053_MCP_TOKEN" \
+  -H "Camt053-Account: acme-treasury" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "curl", "version": "0"}}}'
+```
+
+An MCP client config for the HTTP transport (clients that support
+streamable HTTP, e.g. via `mcp-remote` or native HTTP support):
+
+```json
+{
+  "mcpServers": {
+    "camt053": {
+      "url": "https://camt053.internal.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <token>",
+        "Camt053-Account": "acme-treasury"
+      }
+    }
+  }
+}
+```
+
+### Audit attribution
+
+Every HTTP request — rejected or authorized — and every
+`get_tenant_context` call is written to the `camt053_mcp.audit` logger
+as one JSON line carrying the **service name** (`camt053-mcp`) and the
+tenant **scope**, so multi-tenant calls stay attributable in your log
+pipeline:
+
+```json
+{"event": "http.request.authorized", "path": "/mcp", "scope": "acme-treasury", "service": "camt053-mcp", "timestamp_utc": "2026-07-15T10:00:00.000000Z"}
+```
+
+Route that logger to your append-only audit sink (file, journald,
+object storage) alongside the wider camt053 suite's hash-chain audit
+log. For a production-shaped recipe (TLS proxy, systemd, containers),
+see the [deployment cookbook](deployment-cookbook.md).
+
+## 7. Next steps
+
+- Browse the full [tool catalog](../README.md#tools) (22 tools across
   parsing, validation, identifier checking, return-reason filtering,
-  reversal generation, and CBPR+ readiness).
+  reversal generation, CBPR+ readiness, MT94x migration, journal
+  export, LLM classification, and tenant scoping).
 - Try the [resources](../README.md#resources) — `camt053://return-reasons`
   and `camt053://message-types` give read-only catalog context the
   agent can load without a tool call.

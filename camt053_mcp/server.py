@@ -51,9 +51,18 @@ Launching the server:
           }
         }
 
-The server communicates over stdio (FastMCP's default transport).
+    * As a shared multi-tenant HTTP service (D7, #42): streamable HTTP
+      with mandatory bearer-token auth and optional per-request
+      ``Camt053-Account`` tenant scoping (see
+      :mod:`camt053_mcp.transport`)::
+
+        CAMT053_MCP_TOKEN=s3cret camt053-mcp --transport=http --bind=0.0.0.0:8080
+
+The server communicates over stdio by default (FastMCP's default
+transport); ``--transport=http`` opts in to streamable HTTP.
 """
 
+import argparse
 import json
 from typing import Annotated, Any
 
@@ -75,6 +84,7 @@ from pydantic import Field
 
 from camt053_mcp import __version__, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
+from camt053_mcp import transport as _transport
 
 server = FastMCP("camt053")
 # FastMCP does not expose a version kwarg; without this override the
@@ -856,6 +866,33 @@ def list_classify_entry_categories() -> list[str]:
     return list(classify.DEFAULT_CATEGORIES)
 
 
+@server.tool(title="Get tenant scoping context", annotations=_PURE_READ)
+def get_tenant_context(ctx: Context) -> dict:
+    """Return the multi-tenant scoping context of the current call.
+
+    Use this to confirm which tenant/account scope the server attributes
+    the session to. On the streamable-HTTP transport (D7, #42) the
+    ``tenant`` field carries the value of the optional
+    ``Camt053-Account`` request header the caller sent; over stdio (or
+    when the caller sent no header) it is ``None``. The same value is
+    stamped as the ``scope`` on the server's audit log, so an agent can
+    verify its calls are attributed to the right tenant.
+
+    The lookup is read-only and deterministic for a given request:
+    nothing is validated or mutated, and no external system is touched.
+
+    Args:
+        ctx: The FastMCP Context (auto-injected; carries the underlying
+            HTTP request, when there is one).
+
+    Returns:
+        ``{"service": "camt053-mcp", "tenant": str | None}``.
+    """
+    tenant = _transport.current_tenant(ctx)
+    _transport.audit_event("tool.get_tenant_context", tenant)
+    return {"service": _transport.SERVICE_NAME, "tenant": tenant}
+
+
 @server.tool(title="List all statement entries", annotations=_PURE_READ)
 def list_entries(
     xml: Annotated[
@@ -1347,8 +1384,59 @@ def match_to_invoice_set() -> list[UserMessage | AssistantMessage]:
     ]
 
 
-def main() -> None:
-    """Run the Camt053 MCP server over stdio (the ``camt053-mcp`` entry point)."""
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse the ``camt053-mcp`` command-line arguments.
+
+    Args:
+        argv: The argument list to parse; ``None`` reads ``sys.argv[1:]``
+            (the console-script default).
+    """
+    parser = argparse.ArgumentParser(
+        prog="camt053-mcp",
+        description=(
+            "Camt053 MCP server: stdio by default; --transport=http "
+            "serves authenticated streamable HTTP for shared "
+            "multi-tenant deployments (requires the "
+            f"{_transport.TOKEN_ENV} environment variable)."
+        ),
+    )
+    parser.add_argument(
+        "--transport",
+        choices=("stdio", "http"),
+        default="stdio",
+        help=(
+            "MCP transport to serve: 'stdio' (default; launched by a "
+            "local MCP client) or 'http' (streamable HTTP with "
+            "mandatory bearer-token auth)."
+        ),
+    )
+    parser.add_argument(
+        "--bind",
+        default=_transport.DEFAULT_BIND,
+        metavar="HOST:PORT",
+        help=(
+            "HOST:PORT to listen on with --transport=http "
+            f"(default: {_transport.DEFAULT_BIND}). Ignored for stdio."
+        ),
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Run the Camt053 MCP server (the ``camt053-mcp`` entry point).
+
+    Serves stdio by default -- existing behaviour, unchanged -- or
+    authenticated streamable HTTP when invoked with ``--transport=http``
+    (see :mod:`camt053_mcp.transport` for the auth, tenant-scoping, and
+    audit semantics).
+
+    Args:
+        argv: Command-line arguments; ``None`` reads ``sys.argv[1:]``.
+    """
+    args = _parse_args(argv)
+    if args.transport == "http":
+        _transport.run_http(server, args.bind)
+        return
     server.run()
 
 

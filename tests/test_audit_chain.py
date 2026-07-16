@@ -39,7 +39,7 @@ pytest.importorskip("mcp")
 
 from camt053.audit import AuditEvent, verify_chain  # noqa: E402
 
-from camt053_mcp import observability, transport  # noqa: E402
+from camt053_mcp import auditing, observability, transport  # noqa: E402
 
 SECRET = "audit-chain-secret"
 
@@ -48,8 +48,8 @@ SECRET = "audit-chain-secret"
 def chain_key(monkeypatch):
     """Enable audit chaining with a fresh chain for this test."""
     monkeypatch.setenv(transport.AUDIT_HMAC_KEY_ENV, SECRET)
-    monkeypatch.setattr(transport, "_chain", None)
-    monkeypatch.setattr(transport, "_chain_key", None)
+    monkeypatch.setattr(auditing._chain_state, "chain", None)
+    monkeypatch.setattr(auditing._chain_state, "key", None)
     yield SECRET
 
 
@@ -57,8 +57,8 @@ def chain_key(monkeypatch):
 def no_chain_key(monkeypatch):
     """Ensure audit chaining is disabled for this test."""
     monkeypatch.delenv(transport.AUDIT_HMAC_KEY_ENV, raising=False)
-    monkeypatch.setattr(transport, "_chain", None)
-    monkeypatch.setattr(transport, "_chain_key", None)
+    monkeypatch.setattr(auditing._chain_state, "chain", None)
+    monkeypatch.setattr(auditing._chain_state, "key", None)
 
 
 def _events_from(caplog):
@@ -139,7 +139,7 @@ def test_unsetting_key_disables_chaining_again(chain_key, monkeypatch):
     monkeypatch.delenv(transport.AUDIT_HMAC_KEY_ENV)
     plain = transport.audit_event("http.server.starting", None)
     assert "hmac" not in plain
-    assert transport._chain is None
+    assert auditing._chain_state.chain is None
 
 
 # ─── redaction and truncation ────────────────────────────────────────────────

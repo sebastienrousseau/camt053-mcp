@@ -80,7 +80,7 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from camt053_mcp import observability
-from camt053_mcp.transport import TENANT_HEADER, _tenant_var, audit_event
+from camt053_mcp.auditing import TENANT_HEADER, _tenant_var, audit_event
 
 __all__ = [
     "OAUTH_AUDIENCE_ENV",

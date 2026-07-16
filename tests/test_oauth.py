@@ -664,7 +664,7 @@ def test_build_http_app_oauth_takes_precedence(config):
 
 def test_build_http_app_without_any_auth_is_refused():
     """Neither token nor OAuth config: hard error, never open access."""
-    fake_server = SimpleNamespace(streamable_http_app=lambda: object())
+    fake_server = SimpleNamespace(streamable_http_app=object)
     with pytest.raises(ValueError, match="static token or an OAuth config"):
         transport.build_http_app(fake_server)
 
@@ -685,7 +685,7 @@ def _run_http_with(monkeypatch, env):
     monkeypatch.setattr(
         transport.uvicorn, "run", lambda app, **kw: calls.update(app=app)
     )
-    fake_server = SimpleNamespace(streamable_http_app=lambda: object())
+    fake_server = SimpleNamespace(streamable_http_app=object)
     transport.run_http(fake_server, "127.0.0.1:8123")
     return calls
 
@@ -731,7 +731,7 @@ def test_run_http_partial_oauth_env_refuses_to_start(monkeypatch):
     monkeypatch.delenv(oauth.OAUTH_JWKS_URL_ENV, raising=False)
     monkeypatch.delenv(oauth.OAUTH_SCOPES_ENV, raising=False)
     monkeypatch.setenv(oauth.OAUTH_ISSUER_ENV, ISSUER)
-    fake_server = SimpleNamespace(streamable_http_app=lambda: object())
+    fake_server = SimpleNamespace(streamable_http_app=object)
     with pytest.raises(SystemExit, match="Partial OAuth configuration"):
         transport.run_http(fake_server, "127.0.0.1:8123")
 

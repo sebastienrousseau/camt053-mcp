@@ -293,7 +293,7 @@ def test_run_http_serves_wrapped_app_via_uvicorn(monkeypatch):
 
     monkeypatch.setattr(transport.uvicorn, "run", fake_run)
     monkeypatch.setenv(transport.TOKEN_ENV, "env-token")
-    fake_server = SimpleNamespace(streamable_http_app=lambda: object())
+    fake_server = SimpleNamespace(streamable_http_app=object)
     transport.run_http(fake_server, "127.0.0.1:8123")
     assert isinstance(calls["app"]._app, transport.BearerTokenMiddleware)
     assert calls["app"]._app._token == "env-token"
@@ -309,7 +309,7 @@ def test_run_http_explicit_token_overrides_env(monkeypatch):
         lambda app, **kw: calls.update(app=app),
     )
     monkeypatch.setenv(transport.TOKEN_ENV, "env-token")
-    fake_server = SimpleNamespace(streamable_http_app=lambda: object())
+    fake_server = SimpleNamespace(streamable_http_app=object)
     transport.run_http(fake_server, "127.0.0.1:8123", token="explicit")
     assert calls["app"]._app._token == "explicit"
 

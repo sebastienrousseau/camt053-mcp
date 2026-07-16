@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import os
 import resource
@@ -233,10 +234,8 @@ async def _end_session(
     client: httpx.AsyncClient, url: str, token: str, session_id: str
 ) -> None:
     """Terminate an MCP session (best effort)."""
-    try:
+    with contextlib.suppress(httpx.HTTPError):
         await client.delete(url, headers=_headers(token, session_id))
-    except httpx.HTTPError:
-        pass
 
 
 def _client() -> httpx.AsyncClient:

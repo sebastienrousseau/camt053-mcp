@@ -265,13 +265,16 @@ def test_middleware_audits_rejects_and_accepts(caplog):
 
 
 def test_build_http_app_wraps_streamable_http_in_auth(monkeypatch):
-    """The HTTP app is FastMCP's streamable app behind the middleware."""
+    """The HTTP app is the streamable app behind auth behind metrics."""
+    from camt053_mcp import observability
+
     sentinel = object()
     fake_server = SimpleNamespace(streamable_http_app=lambda: sentinel)
     app = transport.build_http_app(fake_server, "tok")
-    assert isinstance(app, transport.BearerTokenMiddleware)
-    assert app._app is sentinel
-    assert app._token == "tok"
+    assert isinstance(app, observability.MetricsMiddleware)
+    assert isinstance(app._app, transport.BearerTokenMiddleware)
+    assert app._app._app is sentinel
+    assert app._app._token == "tok"
 
 
 def test_run_http_refuses_to_start_without_token(monkeypatch):
@@ -292,8 +295,8 @@ def test_run_http_serves_wrapped_app_via_uvicorn(monkeypatch):
     monkeypatch.setenv(transport.TOKEN_ENV, "env-token")
     fake_server = SimpleNamespace(streamable_http_app=lambda: object())
     transport.run_http(fake_server, "127.0.0.1:8123")
-    assert isinstance(calls["app"], transport.BearerTokenMiddleware)
-    assert calls["app"]._token == "env-token"
+    assert isinstance(calls["app"]._app, transport.BearerTokenMiddleware)
+    assert calls["app"]._app._token == "env-token"
     assert (calls["host"], calls["port"]) == ("127.0.0.1", 8123)
 
 
@@ -308,7 +311,7 @@ def test_run_http_explicit_token_overrides_env(monkeypatch):
     monkeypatch.setenv(transport.TOKEN_ENV, "env-token")
     fake_server = SimpleNamespace(streamable_http_app=lambda: object())
     transport.run_http(fake_server, "127.0.0.1:8123", token="explicit")
-    assert calls["app"]._token == "explicit"
+    assert calls["app"]._app._token == "explicit"
 
 
 # ─── CLI flag plumbing ───────────────────────────────────────────────────────

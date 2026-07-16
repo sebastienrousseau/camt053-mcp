@@ -79,6 +79,7 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from camt053_mcp import observability
 from camt053_mcp.transport import TENANT_HEADER, _tenant_var, audit_event
 
 __all__ = [
@@ -569,6 +570,7 @@ class OAuthResourceMiddleware:
             reason=failure.reason,
             auth="oauth",
         )
+        observability.AUTH_FAILURES.labels(reason=failure.reason).inc()
         response = JSONResponse(
             {"error": error, "error_description": failure.description},
             status_code=status,

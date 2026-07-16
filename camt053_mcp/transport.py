@@ -67,6 +67,8 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from camt053_mcp import observability
+
 if TYPE_CHECKING:  # pragma: no cover
     from mcp.server.fastmcp import Context, FastMCP
 
@@ -261,6 +263,9 @@ class BearerTokenMiddleware:
                 path=scope.get("path", ""),
                 reason="missing or invalid bearer token",
             )
+            observability.AUTH_FAILURES.labels(
+                reason="invalid_static_token"
+            ).inc()
             response = JSONResponse(
                 {"error": "Unauthorized: missing or invalid bearer token"},
                 status_code=401,
@@ -300,7 +305,11 @@ def build_http_app(
 
     Returns:
         FastMCP's streamable-HTTP Starlette app (MCP endpoint at
-        ``/mcp``) wrapped in the selected auth middleware.
+        ``/mcp``) wrapped in the selected auth middleware, itself
+        wrapped in the observability layer
+        (:class:`camt053_mcp.observability.MetricsMiddleware`, which
+        also serves ``GET /metrics``); the server's tool dispatcher is
+        instrumented for the tool metrics as a side effect.
 
     Raises:
         ValueError: If neither ``token`` nor ``oauth_config`` is given.
@@ -309,16 +318,20 @@ def build_http_app(
     # audit/tenant primitives, so the top-level import would be a cycle.
     from camt053_mcp import oauth as _oauth
 
+    observability.instrument_tools(mcp_server)
     inner = mcp_server.streamable_http_app()
+    authed: ASGIApp
     if oauth_config is not None:
-        return _oauth.OAuthResourceMiddleware(
+        authed = _oauth.OAuthResourceMiddleware(
             inner, _oauth.JWTVerifier(oauth_config), oauth_config
         )
-    if not token:
+    elif token:
+        authed = BearerTokenMiddleware(inner, token)
+    else:
         raise ValueError(
             "build_http_app requires a static token or an OAuth config"
         )
-    return BearerTokenMiddleware(inner, token)
+    return observability.MetricsMiddleware(authed)
 
 
 def run_http(mcp_server: FastMCP, bind: str, token: str | None = None) -> None:

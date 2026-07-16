@@ -10,3 +10,6 @@ camt053-loader-mt942>=0.0.1
 ruff==0.15.21
 black==26.5.1
 mypy>=1.11,<3.0
+pyjwt[crypto]>=2.10,<3
+httpx>=0.27,<1
+prometheus-client>=0.20,<2

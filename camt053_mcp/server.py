@@ -1396,8 +1396,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description=(
             "Camt053 MCP server: stdio by default; --transport=http "
             "serves authenticated streamable HTTP for shared "
-            "multi-tenant deployments (requires the "
-            f"{_transport.TOKEN_ENV} environment variable)."
+            "multi-tenant deployments (OAuth 2.1 via the "
+            "CAMT053_MCP_OAUTH_* environment variables, or the "
+            f"static dev-mode {_transport.TOKEN_ENV} token)."
         ),
     )
     parser.add_argument(

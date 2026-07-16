@@ -31,7 +31,11 @@ so the stdio path never imports or executes any of it:
   the ``CAMT053_MCP_TOKEN`` environment variable (compared with
   :func:`hmac.compare_digest` to avoid timing leaks); anything else is
   rejected ``401`` before it reaches the MCP session manager. stdio is
-  intentionally untouched -- no token is required there.
+  intentionally untouched -- no token is required there. The static
+  token is **dev-mode auth**: when any ``CAMT053_MCP_OAUTH_*``
+  variable is set, :mod:`camt053_mcp.oauth` supersedes it with OAuth
+  2.1 resource-server JWT validation (RFC 9728), and starting with
+  only the static token logs an explicit dev-mode warning.
 * **Tenant scoping.** HTTP callers may send an optional
   ``Camt053-Account`` header naming the tenant/account scope of the
   call. The middleware forwards it into a :class:`~contextvars.\
@@ -100,6 +104,10 @@ DEFAULT_BIND = "127.0.0.1:8080"
 #: operators route the ``camt053_mcp.audit`` logger to their append-only
 #: audit sink.
 _audit_logger = logging.getLogger("camt053_mcp.audit")
+
+#: Operational (non-audit) transport diagnostics -- e.g. the dev-mode
+#: auth warning -- go to the module's own logger.
+_logger = logging.getLogger(__name__)
 
 #: The tenant scope of the HTTP request currently being served, set by
 #: :class:`BearerTokenMiddleware` for the duration of each request.
@@ -270,46 +278,115 @@ class BearerTokenMiddleware:
             _tenant_var.reset(reset_token)
 
 
-def build_http_app(mcp_server: FastMCP, token: str) -> ASGIApp:
-    """Build the bearer-authenticated streamable-HTTP ASGI app.
+def build_http_app(
+    mcp_server: FastMCP,
+    token: str | None = None,
+    oauth_config: Any = None,
+) -> ASGIApp:
+    """Build the authenticated streamable-HTTP ASGI app.
+
+    Exactly one auth mode applies: when ``oauth_config`` is given the
+    app enforces OAuth 2.1 resource-server JWT validation
+    (:class:`camt053_mcp.oauth.OAuthResourceMiddleware`, RFC 9728);
+    otherwise the static dev-mode ``token`` is required via
+    :class:`BearerTokenMiddleware`.
 
     Args:
         mcp_server: The FastMCP server to expose over HTTP.
-        token: The bearer token to require on every request.
+        token: The static dev-mode bearer token, when OAuth is not
+            configured.
+        oauth_config: A :class:`camt053_mcp.oauth.OAuthConfig`; takes
+            precedence over ``token``.
 
     Returns:
         FastMCP's streamable-HTTP Starlette app (MCP endpoint at
-        ``/mcp``) wrapped in :class:`BearerTokenMiddleware`.
+        ``/mcp``) wrapped in the selected auth middleware.
+
+    Raises:
+        ValueError: If neither ``token`` nor ``oauth_config`` is given.
     """
-    return BearerTokenMiddleware(mcp_server.streamable_http_app(), token)
+    # Imported here, not at module top: oauth.py imports this module's
+    # audit/tenant primitives, so the top-level import would be a cycle.
+    from camt053_mcp import oauth as _oauth
+
+    inner = mcp_server.streamable_http_app()
+    if oauth_config is not None:
+        return _oauth.OAuthResourceMiddleware(
+            inner, _oauth.JWTVerifier(oauth_config), oauth_config
+        )
+    if not token:
+        raise ValueError(
+            "build_http_app requires a static token or an OAuth config"
+        )
+    return BearerTokenMiddleware(inner, token)
 
 
 def run_http(mcp_server: FastMCP, bind: str, token: str | None = None) -> None:
     """Serve the MCP server over authenticated streamable HTTP.
 
-    Blocks until the process is stopped. The bearer token is read from
-    the :data:`TOKEN_ENV` environment variable (``CAMT053_MCP_TOKEN``)
-    unless supplied explicitly; starting without one is refused rather
-    than silently serving an unauthenticated multi-tenant endpoint.
+    Blocks until the process is stopped. Auth is resolved from the
+    environment, strongest first:
+
+    1. **OAuth 2.1 resource server** -- when the
+       ``CAMT053_MCP_OAUTH_*`` variables are set (see
+       :mod:`camt053_mcp.oauth`), bearer JWTs are validated against
+       the configured issuer / audience / JWKS. A static token set
+       alongside is ignored (with a warning): the weaker credential
+       never widens access.
+    2. **Static dev-mode token** -- the :data:`TOKEN_ENV` environment
+       variable (``CAMT053_MCP_TOKEN``) unless supplied explicitly.
+       An explicit warning marks this as dev-mode auth.
+
+    Starting with neither is refused rather than silently serving an
+    unauthenticated multi-tenant endpoint.
 
     Args:
         mcp_server: The FastMCP server to expose.
         bind: The ``HOST:PORT`` to listen on (see :func:`parse_bind`).
-        token: The bearer token; ``None`` reads :data:`TOKEN_ENV`.
+        token: The static bearer token; ``None`` reads
+            :data:`TOKEN_ENV`.
 
     Raises:
-        SystemExit: If no non-empty bearer token is configured.
+        SystemExit: If neither OAuth nor a static token is configured,
+            or the OAuth configuration is partial.
         ValueError: If ``bind`` is malformed.
     """
+    from camt053_mcp import oauth as _oauth
+
     host, port = parse_bind(bind)
+    oauth_config = _oauth.OAuthConfig.from_env()
     if token is None:
         token = os.environ.get(TOKEN_ENV)
-    if not token:
-        raise SystemExit(
-            f"--transport=http requires a bearer token: set {TOKEN_ENV} "
-            "to a non-empty secret (every HTTP request must then send "
-            "'Authorization: Bearer <secret>')."
+    if oauth_config is not None:
+        if token:
+            _logger.warning(
+                "Both OAuth (%s) and the static token (%s) are set; "
+                "OAuth wins and the static token is IGNORED.",
+                _oauth.OAUTH_ISSUER_ENV,
+                TOKEN_ENV,
+            )
+        app = build_http_app(mcp_server, oauth_config=oauth_config)
+        auth_mode = "oauth"
+    elif token:
+        _logger.warning(
+            "HTTP transport is using the static %s bearer token -- "
+            "DEV-MODE auth (single shared secret, no expiry, no "
+            "scopes). Configure %s / %s for OAuth 2.1 in production.",
+            TOKEN_ENV,
+            _oauth.OAUTH_ISSUER_ENV,
+            _oauth.OAUTH_AUDIENCE_ENV,
         )
-    app = build_http_app(mcp_server, token)
-    audit_event("http.server.starting", None, bind=f"{host}:{port}")
+        app = build_http_app(mcp_server, token=token)
+        auth_mode = "static-token"
+    else:
+        raise SystemExit(
+            f"--transport=http requires auth: set {TOKEN_ENV} to a "
+            "non-empty secret (dev mode; every HTTP request must then "
+            "send 'Authorization: Bearer <secret>'), or configure "
+            f"OAuth 2.1 via {_oauth.OAUTH_ISSUER_ENV} and "
+            f"{_oauth.OAUTH_AUDIENCE_ENV}."
+        )
+    audit_event(
+        "http.server.starting", None, bind=f"{host}:{port}", auth=auth_mode
+    )
     uvicorn.run(app, host=host, port=port, log_level="info")

@@ -16,7 +16,7 @@ ENV PIP_NO_CACHE_DIR=1 \
 # PyPI; the default pins the published release poetry.lock targets. The
 # git client is needed only when the override spec is a git+ URL; it
 # stays in this build stage and never ships in the final image.
-ARG CAMT053_PIP_SPEC="camt053==0.0.13"
+ARG CAMT053_PIP_SPEC="camt053==0.0.14"
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*

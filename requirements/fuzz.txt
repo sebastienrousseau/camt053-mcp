@@ -23,9 +23,9 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-camt053==0.0.13 \
-    --hash=sha256:6e60deb349f3c1477a8195312977f51f6d30d899382b213e467fd4d91cde8713 \
-    --hash=sha256:9f688f59dcc58a0bd44ae7dc14afd39914f1781ecf9a3a061ea05286f0146e4d
+camt053==0.0.14 \
+    --hash=sha256:19ec909f0a83bd5cf371a94abb397d17b19acea3465e06c79c7719cc29f61882 \
+    --hash=sha256:eebef6177271c4db7eec120bb954f13c79b313e02eba575ed3dc650927c87fee
     # via
     #   -r requirements/fuzz.in
     #   camt053-loader-mt940

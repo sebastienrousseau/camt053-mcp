@@ -70,6 +70,8 @@ from prometheus_client import (
 from starlette.responses import Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from camt053_mcp.auditing import audit_tool_invocation
+
 __all__ = [
     "METRICS_PATH",
     "REGISTRY",
@@ -200,7 +202,7 @@ def instrument_tools(mcp_server: Any) -> bool:
     single funnel every tool invocation passes through -- recording
     :data:`TOOL_INVOCATIONS` and :data:`TOOL_LATENCY` per call, and
     emitting one ``tool.invoked`` audit record with session-to-args
-    linkage (:func:`camt053_mcp.transport.audit_tool_invocation`). A
+    linkage (:func:`camt053_mcp.auditing.audit_tool_invocation`). A
     server is only ever wrapped once; repeated calls are no-ops.
 
     Args:
@@ -227,10 +229,6 @@ def instrument_tools(mcp_server: Any) -> bool:
         convert_result: bool = False,
     ) -> Any:
         """Dispatch one tool call, recording metrics and an audit line."""
-        # Lazy import: transport.py imports this module at top level,
-        # so the reverse import must happen at call time.
-        from camt053_mcp import transport
-
         started = time.perf_counter()
         outcome = "exception"
         try:
@@ -247,7 +245,7 @@ def instrument_tools(mcp_server: Any) -> bool:
             TOOL_LATENCY.labels(tool=name).observe(
                 time.perf_counter() - started
             )
-            transport.audit_tool_invocation(name, arguments, context, outcome)
+            audit_tool_invocation(name, arguments, context, outcome)
 
     manager.call_tool = call_tool
     manager._camt053_metrics_instrumented = True

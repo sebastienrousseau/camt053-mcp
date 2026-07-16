@@ -177,30 +177,28 @@ and the [deployment cookbook](docs/deployment-cookbook.md).
 All tools delegate to the shared `camt053.services` layer, so they behave
 identically to the CLI and REST API.
 
-| Tool | Purpose |
-|------|---------|
-| `list_message_types` | List the 3 supported camt.05x message types |
-| `list_return_reasons` | List the ISO external return reason codes |
-| `get_required_fields` | Required input fields for a message type |
-| `get_input_schema` | Full input JSON Schema for a message type |
-| `validate_records` | Validate flat records against a message type |
-| `validate_identifier` | Validate an IBAN, BIC, or LEI |
-| `validate_statement` | Validate a statement against its XSD and detect its type |
-| `convert_mt940_to_camt053` | MT940 → camt.053 migration: convert legacy SWIFT MT940 statement text into a camt.053 structure |
-| `convert_mt942` | MT942 → camt.052 migration: convert legacy SWIFT MT942 interim transaction report text into a camt.052 structure |
-| `check_cbpr_readiness` | Flag CBPR+ Nov 2026 cliff issues in a statement |
-| `get_cbpr_cutover_date` | Return the official CBPR+ cutover date (2026-11-16) |
-| `cite_rulebook` | Quote a curated SEPA / CBPR+ / HVPS+ rulebook clause |
-| `list_rulebook_clauses` | List the available rulebook citations (optionally filtered) |
-| `export_journal` | Export statement entries as Xero `BankTransactions` or QBO `JournalEntry` payloads |
-| `list_export_journal_targets` | List the accounting-platform targets `export_journal` supports |
-| `classify_entry` | Classify a statement entry via MCP Sampling (uses the *client's* LLM) |
-| `list_classify_entry_categories` | List the default categories `classify_entry` uses |
-| `get_tenant_context` | Report the multi-tenant scope of the call (the `Camt053-Account` header on the HTTP transport; `None` over stdio) |
-| `parse_statement` | Parse an incoming camt.05x statement into data |
-| `list_entries` | List every entry across all statements (paginated) |
-| `filter_entries` | Return entries carrying a return reason code (paginated) |
-| `generate_reversal` | Generate a validated reversing-entry XML document |
+- `list_message_types` — List the 3 supported camt.05x message types
+- `list_return_reasons` — List the ISO external return reason codes
+- `get_required_fields` — Required input fields for a message type
+- `get_input_schema` — Full input JSON Schema for a message type
+- `validate_records` — Validate flat records against a message type
+- `validate_identifier` — Validate an IBAN, BIC, or LEI
+- `validate_statement` — Validate a statement against its XSD and detect its type
+- `convert_mt940_to_camt053` — MT940 → camt.053 migration: convert legacy SWIFT MT940 statement text into a camt.053 structure
+- `convert_mt942` — MT942 → camt.052 migration: convert legacy SWIFT MT942 interim transaction report text into a camt.052 structure
+- `check_cbpr_readiness` — Flag CBPR+ Nov 2026 cliff issues in a statement
+- `get_cbpr_cutover_date` — Return the official CBPR+ cutover date (2026-11-16)
+- `cite_rulebook` — Quote a curated SEPA / CBPR+ / HVPS+ rulebook clause
+- `list_rulebook_clauses` — List the available rulebook citations (optionally filtered)
+- `export_journal` — Export statement entries as Xero `BankTransactions` or QBO `JournalEntry` payloads
+- `list_export_journal_targets` — List the accounting-platform targets `export_journal` supports
+- `classify_entry` — Classify a statement entry via MCP Sampling (uses the *client's* LLM)
+- `list_classify_entry_categories` — List the default categories `classify_entry` uses
+- `get_tenant_context` — Report the multi-tenant scope of the call (the `Camt053-Account` header on the HTTP transport; `None` over stdio)
+- `parse_statement` — Parse an incoming camt.05x statement into data
+- `list_entries` — List every entry across all statements (paginated)
+- `filter_entries` — Return entries carrying a return reason code (paginated)
+- `generate_reversal` — Generate a validated reversing-entry XML document
 
 ### Pagination
 

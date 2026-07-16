@@ -5,6 +5,78 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+The **production-auth and observability** cut in progress: OAuth 2.1
+resource-server auth (RFC 9728) on the HTTP transport with the static
+bearer demoted to an explicit dev-mode fallback, Prometheus metrics on
+the MCP layer, tamper-evident audit unification with the core
+library's HMAC hash-chain, and a real-HTTP load benchmark suite.
+
+### Added
+
+- **OAuth 2.1 resource-server auth (RFC 9728).** New
+  `camt053_mcp.oauth` module: bearer JWTs are validated against
+  `CAMT053_MCP_OAUTH_ISSUER` / `CAMT053_MCP_OAUTH_AUDIENCE` (the
+  RFC 8707 canonical resource URI) — signature via a cached JWKS
+  (`CAMT053_MCP_OAUTH_JWKS_URL`, default
+  `<issuer>/.well-known/jwks.json`), `iss`, `aud`, `exp`/`nbf` (30 s
+  leeway), and optional scope gating
+  (`CAMT053_MCP_OAUTH_SCOPES`, e.g. `camt053:read`). Failures are
+  `401` (`403 insufficient_scope`) with a `WWW-Authenticate`
+  challenge carrying `resource_metadata`, and the RFC 9728
+  protected-resource metadata document is served unauthenticated on
+  `GET /.well-known/oauth-protected-resource` (bare and
+  audience-derived paths). Verification algorithms come from the
+  JWKS key, never the token header, so `alg`-confusion downgrades
+  are structurally impossible. Partial OAuth config refuses to
+  start. `pyjwt[crypto]` and `httpx` (both previously transitive)
+  are now explicit dependencies.
+- **Static bearer is now explicit dev-mode.** `CAMT053_MCP_TOKEN`
+  still works exactly as before but logs a DEV-MODE warning at
+  startup; when both OAuth and the static token are configured,
+  OAuth wins and the ignored token is logged. Starting with neither
+  still refuses (unchanged).
+- **Prometheus observability** (`camt053_mcp.observability`, new
+  `prometheus-client` dependency): `mcp_http_requests_total`
+  {path,status} (outermost middleware, auth rejections included,
+  path labels folded to a bounded set),
+  `mcp_tool_invocations_total`{tool,outcome} and
+  `mcp_tool_latency_seconds`{tool} (idempotent wrapper around the
+  FastMCP tool dispatcher), and `mcp_auth_failures_total`{reason}.
+  `GET /metrics` serves the exposition format. Access policy:
+  `/metrics` and `/.well-known/*` are exempt from auth (RFC 9728
+  metadata must be anonymous; metrics expose only aggregate
+  counters) — block `/metrics` at the reverse proxy if that is too
+  much surface.
+- **Tamper-evident audit chain.** With `CAMT053_AUDIT_HMAC_KEY` set,
+  every audit record is appended to the core library's
+  `camt053.audit.HashChain` and the logged line is the chain event
+  (sequence, prev_hash, hmac, payload), verifiable end-to-end with
+  `camt053.audit.verify_chain`; a tampered line breaks verification
+  and key rotation starts a fresh chain. Key unset: plain
+  attribution records, byte-identical to before.
+- **Session-to-args audit linkage.** Every MCP tool invocation logs
+  a `tool.invoked` record carrying the streamable-HTTP session id,
+  JSON-RPC request id, tool name, tenant scope, outcome, and the
+  call arguments redacted with the core library's
+  `camt053.logging` rules (recursively, lists included) and
+  truncated to a bounded preview.
+- **Load benchmarks.** `bench/load_test.py` (asyncio + httpx against
+  the real server subprocess; session-reuse ON/OFF modes; RPS,
+  p50/p95/p99, error rate, server RSS) and `bench/k6/mcp_load.js`
+  (same scenarios for k6, NFR latency thresholds). Results and an
+  honest NFR-tier comparison in `docs/BENCHMARKS.md`: ~299 RPS at
+  100 concurrent sessions (reuse), zero errors up to 1 000
+  concurrent sessions, ~2.4× throughput win for session reuse.
+  `bench/` stays outside the pytest/coverage gates.
+
+### Changed
+
+- `docs/quickstart.md`'s HTTP-deployment section now covers OAuth
+  configuration, the dev-mode warning, `/metrics`, and the audit
+  chain.
+
 ## [0.0.13] - 2026-07-16
 
 The **multi-tenant transport** cut. Ships D7 (#42, spun off #17): an

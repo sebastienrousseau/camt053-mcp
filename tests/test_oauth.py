@@ -650,13 +650,16 @@ def test_middleware_forwards_non_http_scopes(mw):
 
 def test_build_http_app_oauth_takes_precedence(config):
     """With an OAuth config, the OAuth middleware wraps the app."""
+    from camt053_mcp import observability
+
     sentinel = object()
     fake_server = SimpleNamespace(streamable_http_app=lambda: sentinel)
     app = transport.build_http_app(
         fake_server, token="ignored", oauth_config=config
     )
-    assert isinstance(app, oauth.OAuthResourceMiddleware)
-    assert app._app is sentinel
+    assert isinstance(app, observability.MetricsMiddleware)
+    assert isinstance(app._app, oauth.OAuthResourceMiddleware)
+    assert app._app._app is sentinel
 
 
 def test_build_http_app_without_any_auth_is_refused():
@@ -696,14 +699,14 @@ def test_run_http_oauth_env_selects_oauth_middleware(monkeypatch):
             oauth.OAUTH_AUDIENCE_ENV: AUDIENCE,
         },
     )
-    assert isinstance(calls["app"], oauth.OAuthResourceMiddleware)
+    assert isinstance(calls["app"]._app, oauth.OAuthResourceMiddleware)
 
 
 def test_run_http_static_token_logs_dev_mode_warning(monkeypatch, caplog):
     """The static token still works but is flagged as dev-mode auth."""
     with caplog.at_level(logging.WARNING, logger="camt053_mcp.transport"):
         calls = _run_http_with(monkeypatch, {transport.TOKEN_ENV: "s3cret"})
-    assert isinstance(calls["app"], transport.BearerTokenMiddleware)
+    assert isinstance(calls["app"]._app, transport.BearerTokenMiddleware)
     assert any("DEV-MODE" in r.getMessage() for r in caplog.records)
 
 
@@ -718,7 +721,7 @@ def test_run_http_oauth_beats_static_token(monkeypatch, caplog):
                 oauth.OAUTH_AUDIENCE_ENV: AUDIENCE,
             },
         )
-    assert isinstance(calls["app"], oauth.OAuthResourceMiddleware)
+    assert isinstance(calls["app"]._app, oauth.OAuthResourceMiddleware)
     assert any("IGNORED" in r.getMessage() for r in caplog.records)
 
 

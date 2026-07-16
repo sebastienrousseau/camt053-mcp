@@ -50,6 +50,26 @@ ContextVar`, and :func:`current_tenant` resolves it for tools --
   tenant **scope**, so multi-tenant calls are attributable in the
   operator's log pipeline (the same append-only sink the wider camt053
   suite's hash-chain audit log feeds).
+
+Two audit extensions unify this log with the core library's
+tamper-evident HMAC chain:
+
+* **Hash-chaining.** When ``CAMT053_AUDIT_HMAC_KEY`` is set, every
+  audit record is appended to a :class:`camt053.audit.HashChain`
+  keyed from that secret and the *chain event* (sequence, prev_hash,
+  hmac, payload) is logged instead of the bare record, so the log can
+  be verified end-to-end with :func:`camt053.audit.verify_chain` and
+  any tampered line breaks verification. Unset key: chaining is
+  disabled and the plain attribution records are logged exactly as
+  before.
+* **Tool-invocation linkage.** :func:`audit_tool_invocation` (called
+  from the instrumented tool dispatcher) logs one ``tool.invoked``
+  record per MCP tool call carrying the streamable-HTTP session id,
+  the JSON-RPC request id, the tool name, the tenant scope, the
+  outcome, and the call arguments **redacted** with the core
+  library's :func:`camt053.logging.redact_value` rules (recursively,
+  lists included) and truncated to a bounded preview -- linking every
+  session to the exact (redacted) arguments it sent.
 """
 
 from __future__ import annotations
@@ -58,11 +78,15 @@ import hmac
 import json
 import logging
 import os
+import threading
+from collections.abc import Mapping
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 import uvicorn
+from camt053.audit import HashChain
+from camt053.logging import redact_value
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -73,15 +97,18 @@ if TYPE_CHECKING:  # pragma: no cover
     from mcp.server.fastmcp import Context, FastMCP
 
 __all__ = [
+    "AUDIT_HMAC_KEY_ENV",
     "DEFAULT_BIND",
     "SERVICE_NAME",
     "TENANT_HEADER",
     "TOKEN_ENV",
     "BearerTokenMiddleware",
     "audit_event",
+    "audit_tool_invocation",
     "build_http_app",
     "current_tenant",
     "parse_bind",
+    "redacted_arguments",
     "run_http",
 ]
 
@@ -118,6 +145,47 @@ _tenant_var: ContextVar[str | None] = ContextVar(
     "camt053_mcp_tenant", default=None
 )
 
+#: The environment variable holding the HMAC secret that keys the
+#: tamper-evident audit chain. Unset / empty: chaining is disabled and
+#: plain attribution records are logged. The string is the variable's
+#: *name*, not a credential, hence the targeted B105 suppression.
+AUDIT_HMAC_KEY_ENV = "CAMT053_AUDIT_HMAC_KEY"  # nosec B105
+
+#: Redacted tool arguments are truncated to this many characters per
+#: string value, keeping audit lines bounded even for full-statement
+#: XML payloads.
+_ARG_PREVIEW_MAX = 256
+
+#: The process-wide audit hash-chain (lazily created from
+#: :data:`AUDIT_HMAC_KEY_ENV`) and the key it was built with, so a
+#: rotated key starts a fresh chain.
+_chain: HashChain | None = None
+_chain_key: str | None = None
+
+#: Serialises chain appends: sequence numbers and prev-hash linkage
+#: must never interleave across threads.
+_chain_lock = threading.Lock()
+
+
+def _active_chain() -> HashChain | None:
+    """Return the audit hash-chain, or ``None`` when chaining is off.
+
+    Reads :data:`AUDIT_HMAC_KEY_ENV` on every call so operators (and
+    tests) can enable, rotate, or disable the key at runtime; a
+    changed key abandons the old chain and starts a new one at
+    sequence zero.
+    """
+    global _chain, _chain_key
+    key = os.environ.get(AUDIT_HMAC_KEY_ENV)
+    if not key:
+        _chain = None
+        _chain_key = None
+        return None
+    if _chain is None or _chain_key != key:
+        _chain = HashChain(secret=key.encode("utf-8"))
+        _chain_key = key
+    return _chain
+
 
 def audit_event(
     event_type: str, scope: str | None, **fields: Any
@@ -131,6 +199,14 @@ def audit_event(
     sorted-key JSON line on the ``camt053_mcp.audit`` logger and also
     returned so callers (and tests) can inspect it.
 
+    When :data:`AUDIT_HMAC_KEY_ENV` is set, the record is additionally
+    appended to the core library's tamper-evident HMAC hash-chain
+    (:class:`camt053.audit.HashChain`) and the logged/returned value
+    is the **chain event** -- ``{"sequence", "timestamp_utc",
+    "event_type", "payload", "prev_hash", "hmac"}`` with the record as
+    ``payload`` -- so the whole log verifies end-to-end with
+    :func:`camt053.audit.verify_chain` under the same secret.
+
     Args:
         event_type: A stable event label, e.g. ``"http.request.rejected"``
             or ``"http.request.authorized"``.
@@ -138,7 +214,8 @@ def audit_event(
         **fields: Extra JSON-serialisable attributes (path, bind, ...).
 
     Returns:
-        The record that was logged.
+        The record that was logged (the chain event when chaining is
+        enabled).
     """
     record: dict[str, Any] = {
         "service": SERVICE_NAME,
@@ -149,8 +226,150 @@ def audit_event(
         .replace("+00:00", "Z"),
         **fields,
     }
+    chain = _active_chain()
+    if chain is not None:
+        with _chain_lock:
+            chained = chain.append(event_type, payload=record).to_dict()
+        _audit_logger.info(json.dumps(chained, sort_keys=True))
+        return chained
     _audit_logger.info(json.dumps(record, sort_keys=True))
     return record
+
+
+def _redact_item(key: str, value: Any) -> Any:
+    """Redact one argument value under the core library's rules.
+
+    Delegates leaf values to :func:`camt053.logging.redact_value`
+    (exactly the rules ``camt053.logging.redact_context`` applies) and
+    extends its mapping recursion to lists/tuples, so IBANs or names
+    inside e.g. a ``records`` list are redacted too. List items
+    inherit the parent key for rule matching.
+
+    Args:
+        key: The argument name the value sits under.
+        value: The value to redact.
+
+    Returns:
+        The redacted value; containers are rebuilt, never mutated.
+    """
+    if isinstance(value, Mapping):
+        return {k: _redact_item(k, v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_redact_item(key, item) for item in value]
+    return redact_value(key, value)
+
+
+def _truncate_previews(value: Any) -> Any:
+    """Bound every string in ``value`` to :data:`_ARG_PREVIEW_MAX`.
+
+    Args:
+        value: An already-redacted argument value.
+
+    Returns:
+        The value with long strings replaced by a truncated preview
+        annotated with the number of characters dropped.
+    """
+    if isinstance(value, str) and len(value) > _ARG_PREVIEW_MAX:
+        dropped = len(value) - _ARG_PREVIEW_MAX
+        return value[:_ARG_PREVIEW_MAX] + f"...[truncated {dropped} chars]"
+    if isinstance(value, Mapping):
+        return {k: _truncate_previews(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_truncate_previews(item) for item in value]
+    return value
+
+
+def redacted_arguments(arguments: Mapping[str, Any]) -> dict[str, Any]:
+    """Prepare tool-call arguments for the audit log.
+
+    Applies the core library's PII redaction (see :func:`_redact_item`),
+    truncates long strings to a bounded preview, and coerces the result
+    to plain JSON types (non-serialisable leaves become their ``repr``)
+    so the record can always be logged and HMAC-chained.
+
+    Args:
+        arguments: The raw JSON-RPC tool arguments.
+
+    Returns:
+        A JSON-safe, redacted, size-bounded copy of ``arguments``.
+    """
+    prepared = {
+        key: _truncate_previews(_redact_item(key, value))
+        for key, value in dict(arguments).items()
+    }
+    result: dict[str, Any] = json.loads(
+        json.dumps(prepared, sort_keys=True, default=repr)
+    )
+    return result
+
+
+def _session_info(ctx: Any) -> tuple[str | None, str | None]:
+    """Extract (session id, request id) from a FastMCP context.
+
+    Best effort: over streamable HTTP the MCP session id is the
+    ``mcp-session-id`` request header; the request id is the JSON-RPC
+    id of the tool call. Over stdio (or outside a request, where the
+    SDK raises ``ValueError``) both are ``None``.
+
+    Args:
+        ctx: The FastMCP ``Context`` of the running tool, or ``None``.
+
+    Returns:
+        The ``(session_id, request_id)`` pair, each ``None`` when
+        unavailable.
+    """
+    if ctx is None:
+        return None, None
+    try:
+        request_context = ctx.request_context
+    except (AttributeError, ValueError):
+        return None, None
+    if request_context is None:
+        return None, None
+    session_id: str | None = None
+    request = getattr(request_context, "request", None)
+    if request is not None:
+        session_id = request.headers.get("mcp-session-id")
+    request_id = getattr(request_context, "request_id", None)
+    return session_id, str(request_id) if request_id is not None else None
+
+
+def audit_tool_invocation(
+    tool: str, arguments: Mapping[str, Any], ctx: Any, outcome: str
+) -> dict[str, Any]:
+    """Audit one MCP tool invocation with session-to-args linkage.
+
+    Emits a ``tool.invoked`` record carrying the MCP session id and
+    JSON-RPC request id (from the request context), the tool name, the
+    tenant scope, the outcome (``success`` / ``error`` /
+    ``exception``), and the call arguments redacted via the core
+    library's rules and truncated to a bounded preview. When the audit
+    chain is enabled the record is HMAC-chained like every other audit
+    event (see :func:`audit_event`).
+
+    Args:
+        tool: The invoked tool's name.
+        arguments: The raw JSON-RPC tool arguments.
+        ctx: The FastMCP ``Context`` of the call, or ``None``.
+        outcome: The dispatch outcome label.
+
+    Returns:
+        The record that was logged.
+    """
+    try:
+        tenant = current_tenant(ctx)
+    except (AttributeError, ValueError):
+        tenant = _tenant_var.get()
+    session_id, request_id = _session_info(ctx)
+    return audit_event(
+        "tool.invoked",
+        tenant,
+        tool=tool,
+        session=session_id or "-",
+        request_id=request_id or "-",
+        arguments=redacted_arguments(arguments),
+        outcome=outcome,
+    )
 
 
 def current_tenant(ctx: Context | None = None) -> str | None:

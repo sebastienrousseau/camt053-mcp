@@ -21,10 +21,12 @@ discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.13** — 22 MCP tools over stdio or authenticated
+> **Latest release: v0.0.14** — OAuth 2.1 resource-server auth (RFC 9728)
+> on the HTTP transport, Prometheus metrics, a tamper-evident audit chain,
+> and real-HTTP load benchmarks; 22 MCP tools over stdio or authenticated
 > streamable HTTP, all backed by the shared `camt053.services` layer,
 > for Python 3.10+.
-> [See what's new →][release-0013]
+> [See what's new →][release-0014]
 
 ## Contents
 
@@ -439,7 +441,7 @@ Built on the [`camt053`][core] ISO 20022 Bank Statement library and the
 [core]: https://github.com/sebastienrousseau/camt053
 [lsp]: https://github.com/sebastienrousseau/camt053-lsp
 [mcp]: https://modelcontextprotocol.io
-[release-0013]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.13
+[release-0014]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.14
 [docs-badge]: https://img.shields.io/badge/Docs-camt053-blue?style=for-the-badge
 [docs-url]: https://sebastienrousseau.github.io/camt053/
 [license-badge]: https://img.shields.io/pypi/l/camt053-mcp?style=for-the-badge

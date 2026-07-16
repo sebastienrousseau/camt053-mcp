@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.14] - 2026-07-16
 
-The **production-auth and observability** cut in progress: OAuth 2.1
+The **production-auth and observability** cut: OAuth 2.1
 resource-server auth (RFC 9728) on the HTTP transport with the static
 bearer demoted to an explicit dev-mode fallback, Prometheus metrics on
 the MCP layer, tamper-evident audit unification with the core
@@ -73,6 +73,14 @@ library's HMAC hash-chain, and a real-HTTP load benchmark suite.
 
 ### Changed
 
+- **Version** — suite-wide lockstep bump to `0.0.14` across
+  `pyproject.toml`, `camt053_mcp/__init__.py`, `server.json`,
+  `glama.json`, and the README, keeping the camt053 suite's releases
+  in step with the core `camt053` 0.0.14 release.
+- **Dependencies** — `camt053` 0.0.13 → 0.0.14 in `poetry.lock`, the
+  hash-pinned `requirements/{fuzz,lint,test}.txt` CI pins, and the
+  Dockerfile's default `CAMT053_PIP_SPEC` (the mt940/mt942 loaders
+  stay at 0.0.13 — no newer releases yet).
 - `docs/quickstart.md`'s HTTP-deployment section now covers OAuth
   configuration, the dev-mode warning, `/metrics`, and the audit
   chain.
@@ -88,8 +96,9 @@ library's HMAC hash-chain, and a real-HTTP load benchmark suite.
   Pinned-Dependencies): `publish-mcp.yml` and `mcp-inspect.yml` now
   SHA-pin `actions/checkout`, `actions/setup-python`, and
   `actions/setup-node`; the `Dockerfile` pins both `python:3.12-slim`
-  stages to the same digest, pins the default `CAMT053_PIP_SPEC` to
-  `camt053==0.0.13`, and the unpinned `pip install --upgrade pip`
+  stages to the same digest, pins the default `CAMT053_PIP_SPEC`
+  (`camt053==0.0.14` after the lockstep bump above), and the unpinned
+  `pip install --upgrade pip`
   self-upgrades were dropped from `mcp-inspect.yml` and the
   `Dockerfile`.
 

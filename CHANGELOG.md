@@ -77,6 +77,29 @@ library's HMAC hash-chain, and a real-HTTP load benchmark suite.
   configuration, the dev-mode warning, `/metrics`, and the audit
   chain.
 
+### Security
+
+- **click bumped 8.1.7 → 8.4.2** (PYSEC-2026-2132 / CVE-2026-7246) by
+  updating `camt053` / `camt053-loader-mt940` / `camt053-loader-mt942`
+  to 0.0.13 in `poetry.lock` and the hash-pinned
+  `requirements/{test,lint,fuzz}.txt` CI pins (markupsafe follows to
+  3.0.3).
+- **Dependency pinning hardened** (OpenSSF Scorecard
+  Pinned-Dependencies): `publish-mcp.yml` and `mcp-inspect.yml` now
+  SHA-pin `actions/checkout`, `actions/setup-python`, and
+  `actions/setup-node`; the `Dockerfile` pins both `python:3.12-slim`
+  stages to the same digest, pins the default `CAMT053_PIP_SPEC` to
+  `camt053==0.0.13`, and the unpinned `pip install --upgrade pip`
+  self-upgrades were dropped from `mcp-inspect.yml` and the
+  `Dockerfile`.
+
+### Removed
+
+- `.github/workflows/mcp-registry.yml`: duplicated
+  `publish-mcp.yml`, which already publishes `server.json` to the
+  official MCP registry on every `v*.*.*` tag push; the duplicate
+  dispatch failed with "cannot publish duplicate version".
+
 ## [0.0.13] - 2026-07-16
 
 The **multi-tenant transport** cut. Ships D7 (#42, spun off #17): an

@@ -29,6 +29,7 @@ validated reversing-entry XML, all from your favourite MCP client.
 ## Contents
 
 - [Overview](#overview)
+- [The ISO 20022 MCP Suite](#the-iso-20022-mcp-suite)
 - [Install](#install)
 - [Quick Start](#quick-start)
 - [Tools](#tools)
@@ -81,6 +82,37 @@ flowchart LR
     C -->|parse + reverse + validate| D["ISO 20022 camt.053 XML"]
 ```
 
+## The ISO 20022 MCP Suite
+
+`camt053-mcp` is the **bank-statement flagship** of four coordinated,
+vendor-neutral MCP servers that together cover the ISO 20022
+bank-statement workflow — statement depth, whole-catalogue routing,
+reconciliation, and multi-format ingestion. Dependency ranges are kept
+aligned across the suite, so the servers co-install cleanly in a single
+Python environment: start with one, add the rest as your workflow grows.
+
+| Server | Scope | Surface | Install | Use it when |
+|------|------|------|------|------|
+| [`camt053-mcp`](#install) | ISO 20022 `camt.053`/`camt.052` bank statements: parse, validate, filter, reverse; MT940/MT942 migration; CBPR+ readiness; journal export | 22 MCP tools · 4 prompts · 3 resources | `pip install camt053-mcp` | You work with bank-to-customer statements end to end — **this package**, the suite's flagship |
+| [`iso20022-mcp`](https://github.com/sebastienrousseau/iso20022-mcp) | Unified gateway: `search` / `describe` / `validate` / `generate` / `parse` meta-tools routed across the `pain` · `pacs` · `camt` · `acmt` families | 7 meta-tools | `pip install "iso20022-mcp[all]"` | You want one entry point to every message family |
+| [`reconcile-mcp`](https://github.com/sebastienrousseau/reconcile-mcp) | Matches expected `pain.001` payments against observed `camt.053` entries — exact, partial, one-to-many, many-to-one, every match scored and explained | 7 MCP tools | `pip install reconcile-mcp` | You need explainable statement/payment reconciliation |
+
+In one line each: **`camt053-mcp`** is the bank-statement flagship
+(deepest camt.05x surface, stdio + authenticated streamable HTTP);
+**`iso20022-mcp`** is the generic message toolkit (a handful of verbs
+over the whole catalogue); **`reconcile-mcp`** is the reconciliation
+workflow (did the money we expected actually arrive?); and
+**`bankstatementparser-mcp`** is the ingestion layer (many formats in,
+one transaction shape out).
+
+The suite also includes per-family servers —
+[`pain001-mcp`](https://github.com/sebastienrousseau/pain001-mcp)
+(credit transfer initiation),
+[`pacs008-mcp`](https://github.com/sebastienrousseau/pacs008-mcp)
+(FI-to-FI credit transfers), and
+[`acmt001-mcp`](https://github.com/sebastienrousseau/acmt001-mcp)
+(account management) — reachable through the `iso20022-mcp` gateway.
+
 ## Install
 
 **camt053-mcp** runs on macOS, Linux, and Windows and requires **Python 3.10+**
@@ -90,14 +122,6 @@ automatically.
 ```sh
 python -m pip install camt053-mcp
 ```
-
-> **Note:** while the core `camt053` library is not yet on PyPI, install it from
-> source first:
->
-> ```sh
-> python -m pip install "git+https://github.com/sebastienrousseau/camt053.git"
-> python -m pip install camt053-mcp
-> ```
 
 <details>
 <summary>Using an isolated virtual environment (recommended)</summary>
@@ -221,10 +245,6 @@ Both back onto the shared `camt053.services` layer, so they stay in sync with
 the equivalent `list_return_reasons` / `list_message_types` tools. On an error
 they return a serialised `{"error": ...}` payload.
 
-> **Note:** A `validate_statement` MCP tool is **deferred** to a later release —
-> it depends on a core `camt053.services.validate_statement` API that ships with
-> `camt053` 0.0.2.
-
 ## Using the tools
 
 You can invoke the tools in-process — without a transport — straight through the
@@ -316,17 +336,19 @@ interfaces behave identically.
   with an MCP-aware host (Claude Desktop, the IDE plugins, an agent
   framework). For scripted / CI use, the camt053 CLI and REST API
   cover the same ground without the stdio protocol overhead.
-- **You need to run as a long-lived daemon.** This server speaks MCP
-  stdio: an MCP client launches it as a subprocess, sends JSON-RPC
-  over stdin / stdout, and shuts it down. A persistent worker is not
-  the right pattern.
+- **You need to run as a long-lived daemon without an MCP client.**
+  The server does run persistently over the streamable HTTP transport
+  (`--transport=http`), but every consumer must still speak MCP
+  JSON-RPC. For plain REST semantics, use the camt053 FastAPI service.
 - **You need streaming responses.** Tool calls return whole values,
   not streams. Large statements are paginated through the existing
   `list_entries(xml, offset, limit)` envelope, not chunked over
   multiple responses.
-- **You need authentication.** This server has no auth; it is
-  designed to run as a local subprocess inside an MCP client.
-  Multi-tenant / network deployments need a proxy layer in front.
+- **You need per-user OAuth flows brokered for you.** The HTTP
+  transport authenticates callers (OAuth 2.1 resource server with
+  RFC 9728 metadata, or a static bearer token in dev mode) and scopes
+  requests via the `Camt053-Account` tenant header, but it does not
+  run an authorization server: bring your own IdP.
 - **You need to *generate* pain.001 outbound payment files.** Out of
   scope; use [`pain001-mcp`](https://github.com/sebastienrousseau/pain001-mcp).
 
@@ -341,10 +363,6 @@ mise install
 poetry install
 poetry shell
 ```
-
-> This package depends on the core `camt053` library. Until it is on PyPI,
-> install it from source first:
-> `pip install "git+https://github.com/sebastienrousseau/camt053.git"`.
 
 A `Makefile` orchestrates the quality gates (kept in lockstep with CI):
 
@@ -376,6 +394,8 @@ Vulnerability Reporting, not public issues.
 - [`MAINTAINERS.md`](MAINTAINERS.md) — who can merge
 - [`examples/`](examples/) — runnable scripts
 - [`glama.json`](glama.json) — Glama directory manifest
+- [`docs/iso20022-mcp-servers-compared.md`](docs/iso20022-mcp-servers-compared.md) — ISO 20022 MCP servers compared (2026)
+- [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) — measured HTTP load benchmarks
 - Glama listing: <https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp>
 
 ## Related MCP Servers
@@ -387,7 +407,6 @@ Part of the **ISO 20022 MCP Suite** — open-source, Apache-2.0 licensed MCP ser
 | [`pain001-mcp`](https://github.com/sebastienrousseau/pain001-mcp) | Generate & validate ISO 20022 pain.001 payment files (v03–v12, pain.008, SEPA) with rulebook checks |
 | [`pacs008-mcp`](https://github.com/sebastienrousseau/pacs008-mcp) | Generate, validate, parse & scheme-check ISO 20022 pacs.008 FI-to-FI credit transfers + Nov-2026 address linting |
 | [`acmt001-mcp`](https://github.com/sebastienrousseau/acmt001-mcp) | Generate & validate ISO 20022 acmt account-management messages |
-| [`bankstatementparser-mcp`](https://github.com/sebastienrousseau/bankstatementparser-mcp) | Parse bank statements (BAI2, MT940/MT942, CAMT.053, OFX, CSV) into structured transactions |
 | [`noyalib-mcp`](https://github.com/sebastienrousseau/noyalib) | Lossless YAML 1.2 parsing, formatting & validation (Rust, 100% spec compliance) |
 
 ---

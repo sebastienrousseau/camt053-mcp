@@ -110,10 +110,79 @@ camt053-mcp --transport=http --bind=0.0.0.0:8080
 - `--bind HOST:PORT` picks the listen address (default `127.0.0.1:8080`,
   loopback-only — exposing the server beyond the host is an explicit
   opt-in).
-- **Bearer auth is mandatory over HTTP.** The server refuses to start
-  unless `CAMT053_MCP_TOKEN` is set, and every HTTP request must carry
-  `Authorization: Bearer <token>`; a missing or wrong credential is
-  rejected `401` before it reaches the MCP layer. stdio needs no token.
+- **Auth is mandatory over HTTP.** The server refuses to start with
+  neither auth mode configured, and every HTTP request must carry
+  `Authorization: Bearer ...`; a missing or wrong credential is
+  rejected `401` before it reaches the MCP layer. stdio needs no
+  token. The static `CAMT053_MCP_TOKEN` shown above is **dev-mode
+  auth** (a single shared secret with no expiry or scopes — the
+  server logs a warning at startup); production deployments should
+  use OAuth 2.1 below.
+
+### OAuth 2.1 resource-server auth (production)
+
+Point the server at your OAuth 2.1 authorization server (Keycloak,
+Auth0, Entra ID, ...) and it validates real JWT access tokens instead
+of a shared secret:
+
+```sh
+export CAMT053_MCP_OAUTH_ISSUER="https://auth.example.com"
+export CAMT053_MCP_OAUTH_AUDIENCE="https://camt053.internal.example.com/mcp"
+# optional overrides:
+export CAMT053_MCP_OAUTH_JWKS_URL="https://auth.example.com/.well-known/jwks.json"
+export CAMT053_MCP_OAUTH_SCOPES="camt053:read"
+camt053-mcp --transport=http --bind=0.0.0.0:8080
+```
+
+- `ISSUER` and `AUDIENCE` are required together (`AUDIENCE` is this
+  server's canonical resource URI per RFC 8707 — the value your AS
+  puts in the token's `aud` claim). A partial configuration refuses
+  to start.
+- `JWKS_URL` defaults to `<issuer>/.well-known/jwks.json`; keys are
+  cached (5 min TTL) and refreshed on unknown `kid` (key rotation).
+- Tokens are checked for signature, `iss`, `aud`, `exp`/`nbf` (30 s
+  clock-skew leeway), and — when `SCOPES` is set — the required
+  scope(s); a missing scope is `403 insufficient_scope`, everything
+  else `401`, both with a `WWW-Authenticate` challenge carrying the
+  RFC 9728 `resource_metadata` URL so MCP clients can discover your
+  authorization server automatically.
+- The RFC 9728 protected-resource metadata document is served
+  unauthenticated at `GET /.well-known/oauth-protected-resource`
+  (clients need it *before* they hold a token).
+- **Precedence**: when both OAuth and `CAMT053_MCP_TOKEN` are set,
+  OAuth wins and the static token is ignored (with a warning) — the
+  weaker credential never widens access.
+
+### Prometheus metrics
+
+The HTTP app exposes `GET /metrics` (Prometheus exposition format):
+
+- `mcp_http_requests_total{path,status}` — every HTTP request,
+  including auth rejections;
+- `mcp_tool_invocations_total{tool,outcome}` — tool dispatches
+  (`success` / `error` / `exception`);
+- `mcp_tool_latency_seconds{tool}` — tool latency histogram;
+- `mcp_auth_failures_total{reason}` — rejections by reason
+  (`invalid_static_token`, `token_expired`, `issuer_mismatch`, ...).
+
+**Access policy & trade-off**: `/metrics` and `/.well-known/*` are
+exempt from bearer/OAuth auth. The metadata endpoint *must* be
+anonymous (RFC 9728); `/metrics` is exempt because scrapers rarely
+speak OAuth and the series carry only aggregate counters (tool names,
+status codes, failure reasons — never arguments, tenants, or
+statement data). If an unauthenticated scrape endpoint is still too
+much surface for your network, block `/metrics` at the reverse proxy
+or scrape over loopback only.
+
+### Tamper-evident audit chain
+
+Set `CAMT053_AUDIT_HMAC_KEY` to link the audit log into the core
+library's HMAC hash-chain: every record (HTTP decisions and per-call
+`tool.invoked` records with session id, tenant, outcome, and
+PII-redacted arguments) is logged as a chain event whose
+`prev_hash`/`hmac` linkage verifies end-to-end with
+`camt053.audit.verify_chain` — any edited line breaks verification.
+Unset, the plain attribution records below are logged unchanged.
 
 ### Tenant scoping with the `Camt053-Account` header
 

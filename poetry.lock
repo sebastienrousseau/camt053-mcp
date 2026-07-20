@@ -198,14 +198,14 @@ telemetry = ["opentelemetry-api (>=1.20)"]
 
 [[package]]
 name = "camt053-loader-mt940"
-version = "0.0.13"
+version = "0.0.14"
 description = "Convert legacy SWIFT MT940 bank statements to camt.053 ParsedDocument."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "camt053_loader_mt940-0.0.13-py3-none-any.whl", hash = "sha256:9daee55228f41b0065039114b6b38d223b57429c1ee5e8282eb266b0f0495d48"},
-    {file = "camt053_loader_mt940-0.0.13.tar.gz", hash = "sha256:25642c3b3fea1003379fea9a0459bdf545ff9e4af5764cf43805d326deecd92e"},
+    {file = "camt053_loader_mt940-0.0.14-py3-none-any.whl", hash = "sha256:e868a1209447b4e94463763a661664b45e867797841adddf5d64299ac5e5f4ab"},
+    {file = "camt053_loader_mt940-0.0.14.tar.gz", hash = "sha256:2e1643fe4a1ce81cc868ab5758bf09ee7e0afaeaa15eee54352558f3db2e7509"},
 ]
 
 [package.dependencies]
@@ -216,14 +216,14 @@ dev = ["interrogate (>=1.7)", "mypy (>=1.11)", "pytest (>=8)", "pytest-cov (>=5)
 
 [[package]]
 name = "camt053-loader-mt942"
-version = "0.0.13"
+version = "0.0.14"
 description = "Convert legacy SWIFT MT942 interim transaction reports to camt.052 ParsedDocument."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "camt053_loader_mt942-0.0.13-py3-none-any.whl", hash = "sha256:e7616a58b7b9608924ae04aaf8704609deadd0bd64a5635a581460d5c2e089a1"},
-    {file = "camt053_loader_mt942-0.0.13.tar.gz", hash = "sha256:27b8ded597d40362ada30d768ad25db262e04aa7153a017b986734c2bfa2486b"},
+    {file = "camt053_loader_mt942-0.0.14-py3-none-any.whl", hash = "sha256:3b587e391e33615e5ac32b5fbdf8757598f34924387de5887b18745c91932490"},
+    {file = "camt053_loader_mt942-0.0.14.tar.gz", hash = "sha256:778642c5f0f13176e3e2a2f6f253f67d5827fd6422cb27dc81c2a803c0ff5166"},
 ]
 
 [package.dependencies]

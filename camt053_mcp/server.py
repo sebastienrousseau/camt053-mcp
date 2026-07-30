@@ -64,6 +64,8 @@ transport); ``--transport=http`` opts in to streamable HTTP.
 
 import argparse
 import json
+from decimal import Decimal, InvalidOperation
+from statistics import median
 from typing import Annotated, Any
 
 from camt053 import services
@@ -1012,6 +1014,317 @@ def filter_entries(
     except (ValueError, Camt053Error) as exc:
         return [{"error": str(exc)}]
     return _paginate(entries, offset, limit)
+
+
+# ---------------------------------------------------------------------------
+# Statement-anomaly detection (Cap 29).
+#
+# ``detect_statement_anomalies`` runs a small set of *deterministic*,
+# rule-based heuristics over the flat entry list a camt.05x statement parses
+# into. The rules are intentionally explicit and free of learned statistics or
+# hidden thresholds: every constant below is a fixed, documented value, so the
+# same statement always yields the same anomalies. Each rule is a module-level
+# helper so it is unit-testable in isolation and coverage traces every branch.
+#
+# A note on the fee/charge rule. The ``camt053`` typed model surfaces a single
+# monetary ``amount`` per entry and does NOT expose the ISO ``<Chrgs>`` charge
+# sub-amounts that can sit inside a transaction. Fee and charge lines are
+# therefore observed here as their own booked *debit* entries (as most banks
+# render them on a statement), and "disproportionate" is judged against the
+# largest ordinary transaction amount on the same statement -- not against an
+# intra-entry charge field the parser never produces.
+# ---------------------------------------------------------------------------
+
+#: Case-insensitive substrings that mark an entry as a fee/charge line. Kept
+#: deliberately small and explicit; ``charge`` also matches ``charges`` and
+#: ``chrg`` also matches ``chrgs``.
+_FEE_KEYWORDS: frozenset[str] = frozenset(
+    {"fee", "charge", "chrg", "commission"}
+)
+
+#: An identified fee/charge entry is flagged when its amount exceeds this
+#: fraction of the largest ordinary transaction amount on the statement.
+_FEE_AMOUNT_RATIO = Decimal("0.25")
+
+#: A booking-date window is a LOW-severity velocity spike when its entry count
+#: exceeds this multiple of the median per-window count, and a MEDIUM-severity
+#: spike when it exceeds ``_VELOCITY_HIGH_FACTOR`` times the median.
+_VELOCITY_SPIKE_FACTOR = 3
+_VELOCITY_HIGH_FACTOR = 5
+
+
+def _entry_amount(entry: dict[str, Any]) -> Decimal | None:
+    """Return an entry's ``amount`` as a ``Decimal``, or ``None`` if absent.
+
+    A missing or unparsable amount yields ``None`` so callers can skip the
+    entry rather than raise.
+
+    Args:
+        entry: A parsed entry dict as produced by ``list_entries``.
+    """
+    raw = entry.get("amount")
+    if raw is None:
+        return None
+    try:
+        return Decimal(str(raw))
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _entry_label(entry: dict[str, Any], index: int) -> str:
+    """Return a stable human-facing label for an entry.
+
+    Prefers the entry's ``reference`` (``NtryRef``); falls back to a positional
+    ``entry[<index>]`` tag when the entry carries no reference.
+
+    Args:
+        entry: A parsed entry dict.
+        index: The entry's zero-based position in the statement.
+    """
+    ref = entry.get("reference")
+    if ref:
+        return str(ref)
+    return f"entry[{index}]"
+
+
+def _looks_like_fee(entry: dict[str, Any]) -> bool:
+    """Return ``True`` if an entry looks like a bank fee/charge deduction.
+
+    An entry qualifies when it is a debit (``DBIT``) *and* a fee keyword
+    appears (case-insensitively) in its reference, its account-servicer
+    reference, or any transaction detail's additional-info text.
+
+    Args:
+        entry: A parsed entry dict.
+    """
+    if entry.get("credit_debit_indicator") != "DBIT":
+        return False
+    parts: list[Any] = [
+        entry.get("reference"),
+        entry.get("account_servicer_ref"),
+    ]
+    for detail in entry.get("details", []):
+        parts.append(detail.get("additional_info"))
+    haystack = " ".join(str(p) for p in parts if p).lower()
+    return any(keyword in haystack for keyword in _FEE_KEYWORDS)
+
+
+def _duplicate_reference_anomalies(
+    entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Flag entries that share an end-to-end id (or, failing that, reference).
+
+    For each entry the identifying keys are the non-empty end-to-end ids across
+    its transaction details; when an entry carries none, its ``reference`` is
+    used instead. Any key attached to two or more entries is reported as a
+    HIGH-severity duplicate (a classic double-payment signal).
+
+    Args:
+        entries: The flat list of parsed entry dicts.
+    """
+    groups: dict[str, list[str]] = {}
+    for index, entry in enumerate(entries):
+        keys = {
+            detail.get("end_to_end_id")
+            for detail in entry.get("details", [])
+            if detail.get("end_to_end_id")
+        }
+        if not keys:
+            ref = entry.get("reference")
+            if ref:
+                keys = {ref}
+        label = _entry_label(entry, index)
+        for key in keys:
+            groups.setdefault(str(key), []).append(label)
+
+    anomalies: list[dict[str, Any]] = []
+    for key, labels in groups.items():
+        if len(labels) > 1:
+            anomalies.append(
+                {
+                    "type": "duplicate_reference",
+                    "severity": "HIGH",
+                    "detail": (
+                        f"Reference {key!r} appears on {len(labels)} entries; "
+                        "possible duplicate payment."
+                    ),
+                    "entry_refs": labels,
+                }
+            )
+    return anomalies
+
+
+def _fee_anomalies(
+    entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Flag fee/charge entries that are disproportionate to the statement.
+
+    Fee/charge entries are identified with :func:`_looks_like_fee`. The
+    comparison baseline is the largest ordinary (non-fee) transaction amount on
+    the statement; any fee whose amount exceeds ``_FEE_AMOUNT_RATIO`` of that
+    baseline is reported as a MEDIUM-severity anomaly. When the statement has
+    no ordinary transaction to compare against, no fee anomaly is raised.
+
+    Args:
+        entries: The flat list of parsed entry dicts.
+    """
+    fee_indices = {
+        index for index, entry in enumerate(entries) if _looks_like_fee(entry)
+    }
+    if not fee_indices:
+        return []
+
+    principals: list[Decimal] = []
+    for index, entry in enumerate(entries):
+        if index in fee_indices:
+            continue
+        amount = _entry_amount(entry)
+        if amount is not None and amount > 0:
+            principals.append(amount)
+    if not principals:
+        return []
+
+    baseline = max(principals)
+    threshold = baseline * _FEE_AMOUNT_RATIO
+
+    anomalies: list[dict[str, Any]] = []
+    for index in sorted(fee_indices):
+        entry = entries[index]
+        fee_amount = _entry_amount(entry)
+        if fee_amount is None:
+            continue
+        if fee_amount > threshold:
+            anomalies.append(
+                {
+                    "type": "unusual_fee",
+                    "severity": "MEDIUM",
+                    "detail": (
+                        f"Fee/charge entry of {fee_amount} exceeds "
+                        f"{_FEE_AMOUNT_RATIO} of the largest transaction "
+                        f"amount ({baseline}) on the statement."
+                    ),
+                    "entry_refs": [_entry_label(entry, index)],
+                }
+            )
+    return anomalies
+
+
+def _velocity_anomalies(
+    entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Flag booking-date windows whose entry count spikes above the median.
+
+    Entries are bucketed by ``booking_date`` (entries with no booking date are
+    skipped). With at least two dated windows, the median per-window count is
+    computed; a window whose count exceeds ``_VELOCITY_SPIKE_FACTOR`` times the
+    median is a LOW-severity spike, and one exceeding ``_VELOCITY_HIGH_FACTOR``
+    times the median is MEDIUM-severity.
+
+    Args:
+        entries: The flat list of parsed entry dicts.
+    """
+    labels_by_date: dict[str, list[str]] = {}
+    for index, entry in enumerate(entries):
+        date = entry.get("booking_date")
+        if not date:
+            continue
+        labels_by_date.setdefault(str(date), []).append(
+            _entry_label(entry, index)
+        )
+    if len(labels_by_date) < 2:
+        return []
+
+    counts = [len(labels) for labels in labels_by_date.values()]
+    med = median(counts)
+
+    anomalies: list[dict[str, Any]] = []
+    for date in sorted(labels_by_date):
+        labels = labels_by_date[date]
+        count = len(labels)
+        if count > _VELOCITY_HIGH_FACTOR * med:
+            severity = "MEDIUM"
+        elif count > _VELOCITY_SPIKE_FACTOR * med:
+            severity = "LOW"
+        else:
+            continue
+        anomalies.append(
+            {
+                "type": "velocity_spike",
+                "severity": severity,
+                "detail": (
+                    f"{count} entries booked on {date}, far above the median "
+                    f"of {med} entries per booking date."
+                ),
+                "entry_refs": labels,
+            }
+        )
+    return anomalies
+
+
+def detect_anomalies(
+    entries: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Run every anomaly heuristic over a parsed entry list.
+
+    Deterministic and side-effect-free: aggregates the duplicate-reference,
+    unusual-fee, and velocity-spike rules (in that order) into one anomaly
+    list. Exposed at module level so the detection logic can be exercised
+    directly in unit tests without constructing XML.
+
+    Args:
+        entries: The flat list of parsed entry dicts (from ``list_entries``).
+    """
+    anomalies: list[dict[str, Any]] = []
+    anomalies.extend(_duplicate_reference_anomalies(entries))
+    anomalies.extend(_fee_anomalies(entries))
+    anomalies.extend(_velocity_anomalies(entries))
+    return anomalies
+
+
+@server.tool(title="Detect statement anomalies", annotations=_PURE_READ)
+def detect_statement_anomalies(
+    statement_xml: Annotated[
+        str,
+        Field(
+            description=(
+                "The raw camt.05x statement XML document as a string, with its "
+                "root camt <Document> element. Every booked entry across all "
+                "its statements is screened; no file path is accepted."
+            )
+        ),
+    ],
+) -> dict:
+    """Screen a camt.05x statement for deterministic, rule-based anomalies.
+
+    Use this as a fast, explainable first pass over an incoming statement
+    before deeper review or reversal. It applies three fixed heuristics over
+    the parsed entry list (see ``list_entries``) and never calls out to a model
+    or the network, so the same statement always yields the same result:
+
+    * **Duplicate references** (severity ``HIGH``) -- two or more entries share
+      an end-to-end id (or, absent one, an entry reference), a classic
+      double-payment signal.
+    * **Unusual fee deductions** (severity ``MEDIUM``) -- a fee/charge debit
+      whose amount exceeds a fixed fraction (25%) of the largest ordinary
+      transaction amount on the statement.
+    * **Velocity spikes** (severity ``LOW``/``MEDIUM``) -- a booking-date window
+      whose entry count runs far above the statement's median per-window count.
+
+    Returns ``{"anomalies": [{"type", "severity", "detail", "entry_refs"}],
+    "checked_entries": <int>}``; ``anomalies`` is empty for a clean statement.
+    Returns an ``{"error": ...}`` payload instead if the XML cannot be parsed.
+
+    Args:
+        statement_xml: The raw statement XML as a string.
+    """
+    try:
+        entries = services.list_entries(statement_xml)
+    except (ValueError, Camt053Error) as exc:
+        return {"error": str(exc)}
+    return {
+        "anomalies": detect_anomalies(entries),
+        "checked_entries": len(entries),
+    }
 
 
 @server.tool(title="Generate reversal document", annotations=_PURE_READ)

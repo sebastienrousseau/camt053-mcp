@@ -19,7 +19,10 @@ python = ">=3.10,<4.0"
 camt053 = ">=0.0.6,<1"
 camt053-loader-mt940 = ">=0.0.9"
 camt053-loader-mt942 = ">=0.0.1"
-mcp = ">=1.2"
+# Capped <2: mcp 2.0 removed mcp.server.fastmcp (the FastMCP import this
+# server uses), which breaks a plain `pip install .` (e.g. the MCP Inspector
+# CI job). Hold at 1.x until the server is ported to the mcp 2.0 API.
+mcp = ">=1.2,<2"
 # OAuth 2.1 resource-server JWT validation (camt053_mcp.oauth): PyJWT
 # is already in the tree via the MCP SDK, but we import it directly so
 # it is pinned explicitly; [crypto] guarantees RSA/EC JWKS support.

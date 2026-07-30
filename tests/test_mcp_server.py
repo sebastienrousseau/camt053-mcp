@@ -49,6 +49,7 @@ EXPECTED_TOOLS = {
     "parse_statement",
     "list_entries",
     "filter_entries",
+    "detect_statement_anomalies",
     "generate_reversal",
 }
 
@@ -311,6 +312,211 @@ def test_pagination_negative_limit_returns_error(statement_xml):
     result = server.list_entries(statement_xml, offset=0, limit=-1)
     assert isinstance(result, dict)
     assert "error" in result
+
+
+# ---------------------------------------------------------------------------
+# detect_statement_anomalies (Cap 29)
+# ---------------------------------------------------------------------------
+
+
+def test_detect_statement_anomalies_clean_statement(statement_xml):
+    """A well-formed statement with unique refs raises no anomalies."""
+    result = server.detect_statement_anomalies(statement_xml)
+    assert result == {"anomalies": [], "checked_entries": 3}
+
+
+def test_detect_statement_anomalies_duplicate_e2e(statement_xml):
+    """Two entries sharing an end-to-end id are flagged HIGH."""
+    dup_xml = statement_xml.replace("E2E-0002", "E2E-0001")
+    result = server.detect_statement_anomalies(dup_xml)
+    assert result["checked_entries"] == 3
+    dupes = [
+        a for a in result["anomalies"] if a["type"] == "duplicate_reference"
+    ]
+    assert len(dupes) == 1
+    anomaly = dupes[0]
+    assert anomaly["severity"] == "HIGH"
+    assert sorted(anomaly["entry_refs"]) == ["NTRY-0001", "NTRY-0002"]
+    assert "E2E-0001" in anomaly["detail"]
+
+
+def test_detect_statement_anomalies_parse_error_returns_error():
+    """Malformed XML yields an ``{"error": ...}`` dict, not an exception."""
+    result = server.detect_statement_anomalies("<nope/>")
+    assert isinstance(result, dict)
+    assert "error" in result
+
+
+def test_detect_anomalies_duplicate_via_reference():
+    """Absent an end-to-end id, a shared entry reference is a duplicate."""
+    entries = [
+        {"reference": "REF-DUP", "details": []},
+        {"reference": "REF-DUP", "details": []},
+        {"reference": "REF-UNIQUE", "details": []},
+    ]
+    anomalies = server.detect_anomalies(entries)
+    dupes = [a for a in anomalies if a["type"] == "duplicate_reference"]
+    assert len(dupes) == 1
+    assert dupes[0]["severity"] == "HIGH"
+    assert dupes[0]["entry_refs"] == ["REF-DUP", "REF-DUP"]
+
+
+def test_detect_anomalies_untagged_entries_never_duplicate():
+    """Entries with no end-to-end id and no reference cannot collide."""
+    entries = [{"details": []}, {"details": []}]
+    assert server.detect_anomalies(entries) == []
+
+
+def test_detect_anomalies_unusual_fee_flagged_medium():
+    """A fee debit above 25% of the largest transaction is MEDIUM."""
+    entries = [
+        {
+            "reference": "TXN-BIG",
+            "amount": "1000.00",
+            "credit_debit_indicator": "CRDT",
+            "details": [],
+        },
+        {
+            "reference": "SVC-9",
+            "amount": "400.00",
+            "credit_debit_indicator": "DBIT",
+            "details": [
+                {"additional_info": "Service fee", "end_to_end_id": None}
+            ],
+        },
+    ]
+    anomalies = server.detect_anomalies(entries)
+    fees = [a for a in anomalies if a["type"] == "unusual_fee"]
+    assert len(fees) == 1
+    assert fees[0]["severity"] == "MEDIUM"
+    assert fees[0]["entry_refs"] == ["SVC-9"]
+
+
+def test_detect_anomalies_fee_below_threshold_not_flagged():
+    """A fee debit at or below the 25% ratio raises no anomaly."""
+    entries = [
+        {
+            "reference": "TXN-BIG",
+            "amount": "1000.00",
+            "credit_debit_indicator": "CRDT",
+            "details": [],
+        },
+        {
+            "reference": "BANK CHARGE",
+            "amount": "100.00",
+            "credit_debit_indicator": "DBIT",
+            "details": [],
+        },
+    ]
+    anomalies = server.detect_anomalies(entries)
+    assert [a for a in anomalies if a["type"] == "unusual_fee"] == []
+
+
+def test_detect_anomalies_fee_without_principal_not_flagged():
+    """With no ordinary transaction to compare against, no fee anomaly."""
+    entries = [
+        {
+            "reference": "BANK FEE",
+            "amount": "400.00",
+            "credit_debit_indicator": "DBIT",
+            "details": [],
+        },
+    ]
+    assert server.detect_anomalies(entries) == []
+
+
+def test_detect_anomalies_fee_skips_unusable_amounts():
+    """Unparsable / non-positive amounts are skipped in fee analysis."""
+    entries = [
+        {
+            "reference": "NOAMT",
+            "amount": None,
+            "credit_debit_indicator": "CRDT",
+            "details": [],
+        },
+        {
+            "reference": "ZERO",
+            "amount": "0.00",
+            "credit_debit_indicator": "CRDT",
+            "details": [],
+        },
+        {
+            "reference": "BADAMT",
+            "amount": "not-a-number",
+            "credit_debit_indicator": "CRDT",
+            "details": [],
+        },
+        {
+            "reference": "TXN-BIG",
+            "amount": "800.00",
+            "credit_debit_indicator": "CRDT",
+            "details": [],
+        },
+        {
+            "reference": "FEE-NOAMT",
+            "amount": None,
+            "credit_debit_indicator": "DBIT",
+            "details": [],
+        },
+        {
+            "reference": "FEE-300",
+            "amount": "300.00",
+            "credit_debit_indicator": "DBIT",
+            "details": [],
+        },
+    ]
+    anomalies = server.detect_anomalies(entries)
+    fees = [a for a in anomalies if a["type"] == "unusual_fee"]
+    assert len(fees) == 1
+    assert fees[0]["entry_refs"] == ["FEE-300"]
+
+
+def _velocity_entries(counts_by_date):
+    """Build plain CRDT entries spread across the given booking dates."""
+    entries = []
+    seq = 0
+    for date, count in counts_by_date.items():
+        for _ in range(count):
+            seq += 1
+            entries.append(
+                {
+                    "reference": f"V-{seq}",
+                    "amount": "10.00",
+                    "credit_debit_indicator": "CRDT",
+                    "booking_date": date,
+                    "details": [],
+                }
+            )
+    return entries
+
+
+def test_detect_anomalies_velocity_low_spike():
+    """A window at 4x the median count (<=5x) is a LOW-severity spike."""
+    entries = _velocity_entries(
+        {"2026-01-01": 1, "2026-01-02": 1, "2026-01-03": 4}
+    )
+    spikes = [
+        a
+        for a in server.detect_anomalies(entries)
+        if a["type"] == "velocity_spike"
+    ]
+    assert len(spikes) == 1
+    assert spikes[0]["severity"] == "LOW"
+    assert len(spikes[0]["entry_refs"]) == 4
+
+
+def test_detect_anomalies_velocity_medium_spike():
+    """A window above 5x the median count is a MEDIUM-severity spike."""
+    entries = _velocity_entries(
+        {"2026-01-01": 1, "2026-01-02": 1, "2026-01-03": 6}
+    )
+    spikes = [
+        a
+        for a in server.detect_anomalies(entries)
+        if a["type"] == "velocity_spike"
+    ]
+    assert len(spikes) == 1
+    assert spikes[0]["severity"] == "MEDIUM"
 
 
 def test_reversal_preview_prompt_registered():

@@ -38,12 +38,23 @@ prometheus-client = ">=0.20,<2"
 # 'camt053-mcp[otel]'.
 opentelemetry-sdk = { version = ">=1.20,<2", optional = true }
 opentelemetry-exporter-otlp-proto-http = { version = ">=1.20,<2", optional = true }
+# Optional vector-search backend for the ``search_rulebook_vector`` tool
+# (camt053_mcp.vector_search), gated behind the ``vector`` extra. The base
+# install pulls in NEITHER package; sqlite-vec is imported lazily and only
+# the curated rulebook.py clauses are indexed. Install with: pip install
+# 'camt053-mcp[vector]'.
+sqlite-vec = { version = ">=0.1.6,<0.2", optional = true }
 
 [tool.poetry.extras]
 # Opt-in distributed tracing. Enable at runtime with --otel-endpoint.
 otel = [
     "opentelemetry-sdk",
     "opentelemetry-exporter-otlp-proto-http",
+]
+# Opt-in lexical-vector rulebook search (search_rulebook_vector). Pure
+# stdlib embedding; sqlite-vec is the only added dependency.
+vector = [
+    "sqlite-vec",
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -164,6 +175,13 @@ ignore_missing_imports = true
 # environment; tracing imports OpenTelemetry lazily. Ignore the missing
 # stubs so type-checking passes with or without the extra present.
 module = "opentelemetry.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The [vector] extra (sqlite-vec) ships no type stubs and is optional; the
+# search module imports it lazily. Ignore the missing stubs so type-checking
+# passes with or without the extra present.
+module = "sqlite_vec.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

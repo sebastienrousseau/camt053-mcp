@@ -86,6 +86,7 @@ from pydantic import Field
 
 from camt053_mcp import __version__, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
+from camt053_mcp import tracing as _tracing
 from camt053_mcp import transport as _transport
 
 server = FastMCP("camt053")
@@ -1733,6 +1734,19 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             f"(default: {_transport.DEFAULT_BIND}). Ignored for stdio."
         ),
     )
+    parser.add_argument(
+        "--otel-endpoint",
+        default=None,
+        metavar="URL",
+        help=(
+            "Enable OpenTelemetry tracing and export spans to this "
+            "OTLP/HTTP endpoint (e.g. http://collector:4318/v1/traces). "
+            "Requires the optional '[otel]' extra; without it tracing is "
+            "silently skipped. When the flag is given without a URL "
+            "(empty), the standard OTEL_EXPORTER_OTLP_ENDPOINT environment "
+            "variable is used. Applies to both stdio and http transports."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -1744,10 +1758,20 @@ def main(argv: list[str] | None = None) -> None:
     (see :mod:`camt053_mcp.transport` for the auth, tenant-scoping, and
     audit semantics).
 
+    When ``--otel-endpoint`` is supplied, opt-in OpenTelemetry tracing is
+    initialised at startup and the tool dispatcher is instrumented so every
+    tool invocation is traced (see :mod:`camt053_mcp.tracing`). This
+    requires the optional ``[otel]`` extra; without it tracing is silently
+    skipped and behaviour is unchanged.
+
     Args:
         argv: Command-line arguments; ``None`` reads ``sys.argv[1:]``.
     """
     args = _parse_args(argv)
+    if args.otel_endpoint is not None and _tracing.init_tracing(
+        endpoint=args.otel_endpoint or None
+    ):
+        _tracing.instrument_tracing(server)
     if args.transport == "http":
         _transport.run_http(server, args.bind)
         return

@@ -217,3 +217,18 @@ services:
   the `Camt053-Account` header.
 - **Metrics.** Scrape uvicorn/proxy access logs, or wrap the ASGI app
   with your OpenTelemetry middleware of choice.
+- **Distributed tracing (opt-in).** Install the optional extra
+  (`pip install 'camt053-mcp[otel]'`) and pass `--otel-endpoint` to
+  emit one span per tool invocation over OTLP/HTTP:
+
+  ```bash
+  camt053-mcp --transport=http --bind=127.0.0.1:8080 \
+    --otel-endpoint=http://collector:4318/v1/traces
+  ```
+
+  The endpoint may instead come from the standard
+  `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable (pass
+  `--otel-endpoint=` with no value to use it). Spans carry a
+  `service.name` of `camt053-mcp` and are named `mcp.tool.<tool>`.
+  Tracing works over stdio too. Without the `[otel]` extra installed
+  the flag is a no-op, so the base install stays dependency-light.

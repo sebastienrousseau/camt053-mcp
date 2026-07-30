@@ -369,6 +369,66 @@ def test_cli_rejects_unknown_transport():
         server.main(["--transport=carrier-pigeon"])
 
 
+# ─── --otel-endpoint tracing wiring ──────────────────────────────────────────
+
+
+def test_cli_otel_endpoint_inits_and_instruments_tracing(monkeypatch):
+    """`--otel-endpoint=URL` initialises tracing and instruments dispatch."""
+    calls = {}
+    monkeypatch.setattr(
+        server._tracing,
+        "init_tracing",
+        lambda endpoint: calls.update(endpoint=endpoint) or True,
+    )
+    monkeypatch.setattr(
+        server._tracing,
+        "instrument_tracing",
+        lambda mcp_server: calls.update(instrumented=mcp_server),
+    )
+    monkeypatch.setattr(
+        server.server, "run", lambda *a, **k: calls.update(ran=True)
+    )
+    server.main(["--otel-endpoint=http://collector:4318/v1/traces"])
+    assert calls["endpoint"] == "http://collector:4318/v1/traces"
+    assert calls["instrumented"] is server.server
+    assert calls["ran"] is True
+
+
+def test_cli_otel_endpoint_empty_falls_back_to_env(monkeypatch):
+    """An empty --otel-endpoint passes None so the OTLP env var is used."""
+    seen = {}
+    monkeypatch.setattr(
+        server._tracing,
+        "init_tracing",
+        lambda endpoint: seen.update(endpoint=endpoint) or True,
+    )
+    monkeypatch.setattr(
+        server._tracing, "instrument_tracing", lambda mcp_server: None
+    )
+    monkeypatch.setattr(server.server, "run", lambda *a, **k: None)
+    server.main(["--otel-endpoint="])
+    assert seen["endpoint"] is None
+
+
+def test_cli_otel_endpoint_skips_instrument_when_extra_missing(monkeypatch):
+    """When the [otel] extra is absent, dispatch is left un-instrumented."""
+    calls = {}
+    monkeypatch.setattr(
+        server._tracing, "init_tracing", lambda endpoint: False
+    )
+    monkeypatch.setattr(
+        server._tracing,
+        "instrument_tracing",
+        lambda mcp_server: calls.update(instrumented=True),
+    )
+    monkeypatch.setattr(
+        server.server, "run", lambda *a, **k: calls.update(ran=True)
+    )
+    server.main(["--otel-endpoint=http://collector:4318/v1/traces"])
+    assert "instrumented" not in calls
+    assert calls["ran"] is True
+
+
 # ─── get_tenant_context tool (stdio-shaped, in-process) ──────────────────────
 
 

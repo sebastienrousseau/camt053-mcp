@@ -31,6 +31,20 @@ pyjwt = { version = ">=2.10,<3", extras = ["crypto"] }
 httpx = ">=0.27,<1"
 # Prometheus metrics on the MCP layer (camt053_mcp.observability).
 prometheus-client = ">=0.20,<2"
+# Optional OpenTelemetry tracing (camt053_mcp.tracing), gated behind the
+# ``otel`` extra. The base install pulls in NEITHER package; tracing is
+# entirely opt-in and imported lazily. opentelemetry-api is pulled in
+# transitively by opentelemetry-sdk. Install with: pip install
+# 'camt053-mcp[otel]'.
+opentelemetry-sdk = { version = ">=1.20,<2", optional = true }
+opentelemetry-exporter-otlp-proto-http = { version = ">=1.20,<2", optional = true }
+
+[tool.poetry.extras]
+# Opt-in distributed tracing. Enable at runtime with --otel-endpoint.
+otel = [
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-http",
+]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9.0.3,<10.0.0"
@@ -143,6 +157,13 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "camt053_loader_mt942.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# The [otel] extra is optional and not installed in the lint job's
+# environment; tracing imports OpenTelemetry lazily. Ignore the missing
+# stubs so type-checking passes with or without the extra present.
+module = "opentelemetry.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

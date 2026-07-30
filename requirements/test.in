@@ -16,3 +16,8 @@ prometheus-client>=0.20,<2
 # real spans against an InMemorySpanExporter. Not part of the base install.
 opentelemetry-sdk>=1.20,<2
 opentelemetry-exporter-otlp-proto-http>=1.20,<2
+# Optional [vector] search extra: required in the test environment so the
+# vector-search suite (tests/test_vector_search.py) can build a real
+# sqlite-vec index over the curated rulebook clauses. Not part of the base
+# install.
+sqlite-vec>=0.1.6,<0.2

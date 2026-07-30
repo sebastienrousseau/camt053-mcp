@@ -41,6 +41,7 @@ EXPECTED_TOOLS = {
     "get_cbpr_cutover_date",
     "cite_rulebook",
     "list_rulebook_clauses",
+    "search_rulebook_vector",
     "export_journal",
     "list_export_journal_targets",
     "classify_entry",

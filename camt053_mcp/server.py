@@ -88,6 +88,7 @@ from camt053_mcp import __version__, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
 from camt053_mcp import tracing as _tracing
 from camt053_mcp import transport as _transport
+from camt053_mcp import vector_search as _vector_search
 
 server = FastMCP("camt053")
 # FastMCP does not expose a version kwarg; without this override the
@@ -718,6 +719,69 @@ def list_rulebook_clauses(
             returns all versions.
     """
     return rulebook.list_clauses(scheme=scheme, version=version)
+
+
+@server.tool(
+    title="Search rulebook clauses by similarity", annotations=_PURE_READ
+)
+def search_rulebook_vector(
+    query: Annotated[
+        str,
+        Field(
+            description=(
+                "A natural-language search string (e.g. 'structured address "
+                "requirement' or 'instant payment settlement time'). Matched "
+                "against the curated SEPA / CBPR+ / HVPS+ clause summaries."
+            )
+        ),
+    ],
+    top_k: Annotated[
+        int,
+        Field(
+            description=(
+                "Maximum number of clauses to return, ranked most-similar "
+                "first. Clamped to the corpus size; must be positive. "
+                "Defaults to 5."
+            )
+        ),
+    ] = 5,
+) -> dict:
+    """Search the curated rulebook clauses by lexical-vector similarity.
+
+    Use this when you know *what* a rule is about but not its exact
+    ``scheme``/``version``/``clause`` id: describe it in natural language and
+    get back the closest curated clauses, each with a similarity ``score``.
+    Then pass the winning ``scheme``/``version``/``clause`` to
+    ``cite_rulebook`` for the full citation, or browse everything with
+    ``list_rulebook_clauses``.
+
+    Retrieval is a **deterministic lexical-vector cosine** search over the
+    same curated SEPA / CBPR+ / HVPS+ summaries that back ``cite_rulebook``
+    (no external, copyrighted, or auth-gated rulebook text is indexed). Each
+    clause and the query are hashed into a fixed 256-dimension term-frequency
+    vector (whole words plus character 3/4-grams, BLAKE2b-bucketed so results
+    are reproducible across processes) and ranked by cosine distance with
+    ``sqlite-vec``. It is offline and does **not** use a large neural
+    embedding model, so the same query always yields the same ranking and no
+    model download or network call happens at query time.
+
+    ``sqlite-vec`` ships in the optional ``[vector]`` extra and is imported
+    lazily; when it is not installed this returns a graceful
+    ``{"error": ...}`` payload asking the operator to
+    ``pip install 'camt053-mcp[vector]'`` rather than failing to import.
+
+    Args:
+        query: The natural-language search string.
+        top_k: The maximum number of clauses to return (default ``5``,
+            clamped to the corpus size).
+
+    Returns:
+        ``{"query", "top_k", "returned", "method", "results", "disclaimer"}``
+        where ``results`` is the ranked list of clause dicts (each with an
+        added ``score``), or an ``{"error": ...}`` payload on a bad argument
+        or a missing ``[vector]`` extra.
+    """
+    return _vector_search.search(query, top_k)
 
 
 @server.tool(

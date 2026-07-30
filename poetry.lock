@@ -2395,6 +2395,22 @@ files = [
 ]
 
 [[package]]
+name = "sqlite-vec"
+version = "0.1.9"
+description = ""
+optional = true
+python-versions = "*"
+groups = ["main"]
+markers = "extra == \"vector\""
+files = [
+    {file = "sqlite_vec-0.1.9-py3-none-macosx_10_6_x86_64.whl", hash = "sha256:1b62a7f0a060d9475575d4e599bbf94a13d85af896bc1ce86ee80d1b5b48e5fb"},
+    {file = "sqlite_vec-0.1.9-py3-none-macosx_11_0_arm64.whl", hash = "sha256:1d52e30513bae4cc9778ddbf6145610434081be4c3afe57cd877893bad9f6b6c"},
+    {file = "sqlite_vec-0.1.9-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4e921e592f24a5f9a18f590b6ddd530eb637e2d474e3b1972f9bbeb773aa3cb9"},
+    {file = "sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl", hash = "sha256:1515727990b49e79bcaf75fdee2ffc7d461f8b66905013231251f1c8938e7786"},
+    {file = "sqlite_vec-0.1.9-py3-none-win_amd64.whl", hash = "sha256:4a28dc12fa4b53d7b1dced22da2488fade444e96b5d16fd2d698cd670675cf32"},
+]
+
+[[package]]
 name = "sse-starlette"
 version = "3.4.5"
 description = "SSE plugin for Starlette"
@@ -2860,8 +2876,9 @@ docs = ["jinja2", "sphinx", "sphinx_rtd_theme"]
 
 [extras]
 otel = ["opentelemetry-exporter-otlp-proto-http", "opentelemetry-sdk"]
+vector = ["sqlite-vec"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "f73ccaaa4b684f9cc3d02ffaa4524e422e1b5c4518dc6ed12e3f77b8e7e753d3"
+content-hash = "f6b5d053665eb210f35928ec227bae973c59c68039de3edb995f07ce0c5b8e0c"

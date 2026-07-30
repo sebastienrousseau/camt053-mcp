@@ -50,7 +50,7 @@ def _memory_exporter():
     )
 
     exporter = InMemorySpanExporter()
-    tracing._PROVIDER.add_span_processor(SimpleSpanProcessor(exporter))
+    tracing.provider().add_span_processor(SimpleSpanProcessor(exporter))
     return exporter
 
 
@@ -164,9 +164,15 @@ def test_trace_span_records_exception_and_sets_error(monkeypatch):
     assert tracing.init_tracing() is True
     exporter = _memory_exporter()
 
-    with pytest.raises(ValueError, match="boom"):
+    # try/except (not pytest.raises) so the post-block assertions are plainly
+    # reachable to static analysis while still proving the exception re-raises.
+    raised: ValueError | None = None
+    try:
         with tracing.trace_span("mcp.tool.fail"):
             raise ValueError("boom")
+    except ValueError as exc:
+        raised = exc
+    assert raised is not None and str(raised) == "boom"
 
     (recorded,) = exporter.get_finished_spans()
     assert recorded.name == "mcp.tool.fail"

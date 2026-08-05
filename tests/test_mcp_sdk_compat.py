@@ -74,3 +74,41 @@ def test_tools_are_registered() -> None:
     tools = asyncio.run(server.list_tools())
     assert tools, "no tools registered on the MCP server"
     assert all(t.name for t in tools)
+
+
+def test_result_is_error_handles_both_spellings() -> None:
+    """The helper must not depend on which spelling the SDK exposes."""
+
+    class OnlySnake:
+        is_error = True
+
+    class OnlyCamel:
+        isError = True  # noqa: N815 - mirrors the mcp 1.x field name
+
+    assert compat.result_is_error(OnlySnake()) is True
+    assert compat.result_is_error(OnlyCamel()) is True
+    assert compat.result_is_error(object()) is False
+
+
+def test_result_content_handles_every_shape() -> None:
+    """2.x wraps content in an object; 1.x returned it bare or in a tuple."""
+
+    class Wrapped:
+        content = ["block"]
+
+    assert compat.result_content(Wrapped()) == ["block"]
+    assert compat.result_content((["block"], {"meta": 1})) == ["block"]
+    assert compat.result_content(["block"]) == ["block"]
+
+
+def test_result_structured_handles_both_shapes() -> None:
+    """2.x exposes structured_content; 1.x used the tuple's second slot."""
+
+    class Wrapped:
+        structured_content = {"result": [1, 2]}
+
+    assert compat.result_structured(Wrapped()) == {"result": [1, 2]}
+    assert compat.result_structured((["block"], {"result": []})) == {
+        "result": []
+    }
+    assert compat.result_structured(["block"]) is None

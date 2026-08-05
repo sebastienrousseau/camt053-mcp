@@ -40,6 +40,7 @@ __all__ = [
     "build_server",
     "result_content",
     "result_is_error",
+    "result_structured",
     "server_version",
 ]
 
@@ -127,9 +128,24 @@ def result_content(result: Any) -> Any:
     content = getattr(result, "content", None)
     if content is not None:
         return content
-    return (
-        result[0] if isinstance(result, tuple) else result
-    )  # pragma: no cover
+    return result[0] if isinstance(result, tuple) else result
+
+
+def result_structured(result: Any) -> Any:
+    """The structured payload of a ``call_tool`` result, or ``None``.
+
+    2.x exposes it as ``CallToolResult.structured_content``; 1.x put it
+    in the second slot of a ``(content, structured)`` tuple. Prefer this
+    over parsing the text blocks: 2.x emits *one block per item* when a
+    tool returns a list, where 1.x emitted a single JSON array, so block
+    parsing gives different answers on the two majors.
+    """
+    structured = getattr(result, "structured_content", None)
+    if structured is not None:
+        return structured
+    if isinstance(result, tuple) and len(result) > 1:
+        return result[1]
+    return None
 
 
 def result_is_error(result: Any) -> bool:
@@ -141,4 +157,4 @@ def result_is_error(result: Any) -> bool:
     """
     if hasattr(result, "is_error"):  # mcp >= 2
         return bool(result.is_error)
-    return bool(getattr(result, "isError", False))  # pragma: no cover
+    return bool(getattr(result, "isError", False))

@@ -58,7 +58,7 @@ Launching the server:
 
         CAMT053_MCP_TOKEN=s3cret camt053-mcp --transport=http --bind=0.0.0.0:8080
 
-The server communicates over stdio by default (FastMCP's default
+The server communicates over stdio by default (MCPServer's default
 transport); ``--transport=http`` opts in to streamable HTTP.
 """
 
@@ -79,8 +79,6 @@ from camt053.constants import return_reason_names, valid_xml_types
 from camt053.exceptions import Camt053Error
 from camt053_loader_mt940.loader import parse_mt940
 from camt053_loader_mt942.loader import parse_mt942
-from mcp.server.fastmcp import Context, FastMCP
-from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
@@ -89,12 +87,14 @@ from camt053_mcp import export_journal as _export_journal
 from camt053_mcp import tracing as _tracing
 from camt053_mcp import transport as _transport
 from camt053_mcp import vector_search as _vector_search
+from camt053_mcp._mcp_compat import (
+    AssistantMessage,
+    Context,
+    UserMessage,
+    build_server,
+)
 
-server = FastMCP("camt053")
-# FastMCP does not expose a version kwarg; without this override the
-# MCP SDK's own version leaks into serverInfo.version, breaking
-# manifest/runtime coherence checks (e.g. Glama scoring).
-server._mcp_server.version = __version__
+server = build_server("camt053", __version__)
 
 # Shared MCP tool annotations. These hints let MCP clients (and the Glama
 # quality grader) reason about a tool's safety, cacheability, and
@@ -108,7 +108,13 @@ server._mcp_server.version = __version__
 # read-only, idempotent, non-destructive, closed-world. No tool in this
 # server reads a caller-supplied filesystem path or mutates persistent
 # state, so no ``_FS_READ`` / ``_WRITE`` variants are needed.
-_PURE_READ = ToolAnnotations(
+# camelCase is deliberate: mcp 1.x names these fields `readOnlyHint`
+# etc., while 2.x renamed them to snake_case and kept camelCase as
+# aliases. camelCase is the only spelling correct on both majors —
+# snake_case on 1.x lands in an extra attribute and silently leaves the
+# real field None. mypy resolves against 2.x, where the alias is
+# invisible to it.
+_PURE_READ = ToolAnnotations(  # type: ignore[call-arg]
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=True,
@@ -120,7 +126,7 @@ _PURE_READ = ToolAnnotations(
 # no state (read-only, non-destructive) but reaches an external system and
 # is non-deterministic, so it is open-world and NOT idempotent -- the same
 # entry may classify differently across calls.
-_SAMPLING = ToolAnnotations(
+_SAMPLING = ToolAnnotations(  # type: ignore[call-arg]
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=False,
@@ -903,7 +909,7 @@ async def classify_entry(
     classifier.
 
     Args:
-        ctx: The FastMCP Context (auto-injected; provides
+        ctx: The MCPServer Context (auto-injected; provides
             ``session.create_message``).
         entry: A statement entry dict (the shape returned by
             ``parse_statement`` / ``list_entries``).
@@ -949,7 +955,7 @@ def get_tenant_context(ctx: Context) -> dict:
     nothing is validated or mutated, and no external system is touched.
 
     Args:
-        ctx: The FastMCP Context (auto-injected; carries the underlying
+        ctx: The MCPServer Context (auto-injected; carries the underlying
             HTTP request, when there is one).
 
     Returns:

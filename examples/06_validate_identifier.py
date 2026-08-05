@@ -14,8 +14,8 @@ from camt053_mcp.server import validate_identifier
 CASES = [
     ("iban", "GB29NWBK60161331926819"),  # valid
     ("iban", "GB00BAD0000000000000000"),  # invalid checksum
-    ("bic", "NWBKGB2LXXX"),               # valid 11-char
-    ("lei", "529900T8BM49AURSDO55"),      # valid (DTCC)
+    ("bic", "NWBKGB2LXXX"),  # valid 11-char
+    ("lei", "529900T8BM49AURSDO55"),  # valid (DTCC)
 ]
 
 

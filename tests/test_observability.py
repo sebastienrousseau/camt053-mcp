@@ -36,6 +36,7 @@ import pytest
 pytest.importorskip("mcp")
 
 from camt053_mcp import oauth, observability, transport  # noqa: E402
+from camt053_mcp._mcp_compat import result_is_error
 
 
 def _sample(name, labels):
@@ -376,14 +377,15 @@ def test_full_tool_call_over_http_records_tool_metrics(http_server):
         async with httpx.AsyncClient(headers=headers, timeout=30) as client:
             async with streamable_http_client(
                 http_server.url, http_client=client
-            ) as (read_stream, write_stream, _):
+            ) as _streams:
+                read_stream, write_stream = _streams[0], _streams[1]
                 async with ClientSession(read_stream, write_stream) as sess:
                     await sess.initialize()
                     result = await sess.call_tool(
                         "validate_identifier",
                         {"kind": "bic", "value": "NWBKGB2LXXX"},
                     )
-        assert not result.isError
+        assert not result_is_error(result)
         return json.loads(result.content[0].text)
 
     payload = asyncio.run(call())

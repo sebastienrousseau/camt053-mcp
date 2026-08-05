@@ -85,7 +85,7 @@ async def classify_entry(
     """Classify one entry into a category via the client's LLM.
 
     Args:
-        ctx: The FastMCP Context (provides ``session.create_message``).
+        ctx: The MCPServer Context (provides ``session.create_message``).
         entry: A statement entry dict (the shape returned by
             ``parse_statement`` / ``list_entries``).
         categories: The candidate categories. Defaults to

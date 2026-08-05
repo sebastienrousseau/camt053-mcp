@@ -188,7 +188,7 @@ def test_redacted_arguments_are_json_safe():
 
 
 def _ctx(headers=None, request_id="req-9"):
-    """A fake FastMCP Context carrying an HTTP request."""
+    """A fake MCPServer Context carrying an HTTP request."""
     request = SimpleNamespace(headers=headers) if headers is not None else None
     return SimpleNamespace(
         request_context=SimpleNamespace(request=request, request_id=request_id)

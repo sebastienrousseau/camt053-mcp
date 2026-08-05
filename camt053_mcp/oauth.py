@@ -47,7 +47,7 @@ Three pieces live here:
   metadata document itself on ``GET /.well-known/oauth-protected-\\
 resource`` (both the bare path and the audience-derived variant).
 
-Why the middleware is hand-wired rather than FastMCP's constructor
+Why the middleware is hand-wired rather than MCPServer's constructor
 auth: the server instance is a module-level singleton created long
 before the transport is chosen (stdio never needs auth), and the
 transport layer needs per-path exemptions (metadata, metrics) plus

@@ -48,6 +48,7 @@ import jwt  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import rsa  # noqa: E402
 
 from camt053_mcp import oauth, transport  # noqa: E402
+from camt053_mcp._mcp_compat import result_is_error
 
 ISSUER = "https://auth.example.test"
 AUDIENCE = "https://mcp.example.test/mcp"
@@ -740,14 +741,15 @@ def test_run_http_partial_oauth_env_refuses_to_start(monkeypatch):
 
 
 def test_oauth_end_to_end_over_real_http(config, rsa_key):
-    """A dedicated FastMCP instance serves OAuth-authed streamable HTTP."""
+    """A dedicated MCPServer instance serves OAuth-authed streamable HTTP."""
     import httpx
     import uvicorn
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
-    from mcp.server.fastmcp import FastMCP
 
-    tiny = FastMCP("oauth-e2e")
+    from camt053_mcp._mcp_compat import MCPServer
+
+    tiny = MCPServer("oauth-e2e")
 
     @tiny.tool()
     def echo(text: str) -> str:
@@ -790,7 +792,8 @@ def test_oauth_end_to_end_over_real_http(config, rsa_key):
             ) as client:
                 async with streamable_http_client(
                     f"{base}/mcp", http_client=client
-                ) as (read_stream, write_stream, _):
+                ) as _streams:
+                    read_stream, write_stream = _streams[0], _streams[1]
                     async with ClientSession(
                         read_stream, write_stream
                     ) as session:
@@ -798,7 +801,7 @@ def test_oauth_end_to_end_over_real_http(config, rsa_key):
                         result = await session.call_tool(
                             "echo", {"text": "hello"}
                         )
-            assert not result.isError
+            assert not result_is_error(result)
             return result.content[0].text
 
         assert asyncio.run(call()) == "hello"

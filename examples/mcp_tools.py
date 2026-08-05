@@ -66,7 +66,11 @@ async def main() -> None:
         result = await server.call_tool(name, args)
         # FastMCP returns a (content, structured) tuple or content blocks;
         # pull the first text payload for display.
-        content = result[0] if isinstance(result, tuple) else result
+        # mcp 2.x returns a CallToolResult (read .content); 1.x
+        # returns the content list, or a (content, meta) tuple.
+        content = getattr(result, "content", None)
+        if content is None:
+            content = result[0] if isinstance(result, tuple) else result
         text = content[0].text if content else ""
         return text
 

@@ -15,7 +15,9 @@ from camt053_mcp.server import filter_entries
 
 
 def main() -> None:
-    xml = (Path(__file__).parent / "_data" / "sample_statement.xml").read_text()
+    xml = (
+        Path(__file__).parent / "_data" / "sample_statement.xml"
+    ).read_text()
     matches = filter_entries(xml, reason_code="AC04")
     print(f"Entries returned AC04: {len(matches)}")
     for e in matches:

@@ -23,9 +23,12 @@ import pytest
 pytest.importorskip("mcp")
 
 from camt053.exceptions import Camt053Error  # noqa: E402
-from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 import camt053_mcp.server as server  # noqa: E402
+from camt053_mcp._mcp_compat import (
+    MCPServer,  # noqa: E402
+    result_content,
+)
 
 EXPECTED_TOOLS = {
     "list_message_types",
@@ -56,14 +59,14 @@ EXPECTED_TOOLS = {
 
 
 def _registered_prompt_names() -> set[str]:
-    """Return the names of every prompt registered on the FastMCP server."""
+    """Return the names of every prompt registered on the MCPServer server."""
     return {
         prompt.name for prompt in server.server._prompt_manager.list_prompts()
     }
 
 
 def _registered_resource_uris() -> set[str]:
-    """Return the URIs of every resource registered on the FastMCP server."""
+    """Return the URIs of every resource registered on the MCPServer server."""
     return {
         str(resource.uri)
         for resource in server.server._resource_manager.list_resources()
@@ -71,14 +74,14 @@ def _registered_resource_uris() -> set[str]:
 
 
 def _read_resource(uri: str):
-    """Read a resource through FastMCP and return its decoded JSON payload."""
+    """Read a resource through MCPServer and return its decoded JSON payload."""
     contents = asyncio.run(server.server.read_resource(uri))
     block = contents[0] if isinstance(contents, list | tuple) else contents
     return json.loads(block.content)
 
 
 def _registered_tool_names() -> set[str]:
-    """Return the names of every tool registered on the FastMCP server.
+    """Return the names of every tool registered on the MCPServer server.
 
     Prefers the synchronous ``_tool_manager.list_tools()`` introspection;
     falls back to the async ``list_tools()`` API if unavailable.
@@ -91,8 +94,8 @@ def _registered_tool_names() -> set[str]:
 
 
 def test_server_and_main_are_well_formed():
-    """The module exposes a FastMCP server and a callable ``main``."""
-    assert isinstance(server.server, FastMCP)
+    """The module exposes a MCPServer server and a callable ``main``."""
+    assert isinstance(server.server, MCPServer)
     assert callable(server.main)
 
 
@@ -699,7 +702,7 @@ def test_bank_session_payload_cutover_date_included():
 
 
 def test_bank_session_resource_via_fastmcp():
-    """The templated resource resolves through FastMCP's URI router."""
+    """The templated resource resolves through MCPServer's URI router."""
     payload = _read_resource("camt053://session/chat-42/bank/NWBKGB2LXXX")
     assert payload["session_id"] == "chat-42"
     assert payload["bic"] == "NWBKGB2LXXX"
@@ -719,17 +722,18 @@ def test_main_runs_server(monkeypatch):
 
 
 def test_call_tool_through_fastmcp():
-    """Tools are invocable through the FastMCP dispatch layer."""
+    """Tools are invocable through the MCPServer dispatch layer."""
 
     async def go():
         result = await server.server.call_tool(
             "validate_identifier", {"kind": "bic", "value": "NWBKGB2LXXX"}
         )
-        # call_tool returns a sequence of content blocks; extract the text.
-        block = result[0] if isinstance(result, list | tuple) else result
+        # 2.x returns a CallToolResult (read .content); 1.x returned the
+        # content list, or a (content, structured) tuple.
+        content = result_content(result)
+        block = content[0] if isinstance(content, list | tuple) else content
         text = getattr(block, "text", None)
         if text is None and isinstance(result, tuple):
-            # Newer FastMCP returns (content, structured) tuples.
             text = json.dumps(result[1])
         return json.loads(text)
 

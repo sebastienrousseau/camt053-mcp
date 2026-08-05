@@ -47,6 +47,8 @@ from concurrent.futures import ThreadPoolExecutor
 import httpx
 import pytest
 
+from camt053_mcp._mcp_compat import result_is_error
+
 pytest.importorskip("mcp")
 
 from mcp import ClientSession  # noqa: E402
@@ -178,16 +180,13 @@ async def _drive_one_http_session(url: str, token: str, tenant: str) -> None:
         "Camt053-Account": tenant,
     }
     async with httpx.AsyncClient(headers=headers, timeout=30) as client:
-        async with streamable_http_client(url, http_client=client) as (
-            read_stream,
-            write_stream,
-            _,
-        ):
+        async with streamable_http_client(url, http_client=client) as _streams:
+            read_stream, write_stream = _streams[0], _streams[1]
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 for _ in range(_HTTP_CALLS_PER_SESSION):
                     result = await session.call_tool("get_tenant_context", {})
-                    assert not result.isError
+                    assert not result_is_error(result)
                     payload = json.loads(result.content[0].text)
                     # Attribution must never bleed across sessions.
                     assert payload["tenant"] == tenant

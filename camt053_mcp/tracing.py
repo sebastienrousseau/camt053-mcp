@@ -42,7 +42,7 @@ Three primitives are exposed:
   (yielding ``None``) until :func:`init_tracing` has succeeded.
 * :func:`traced_tool` -- a decorator built on :func:`trace_span` that
   wraps a sync or async callable in a named span.
-* :func:`instrument_tracing` -- wires the FastMCP tool dispatcher so
+* :func:`instrument_tracing` -- wires the MCPServer tool dispatcher so
   every tool invocation is traced (idempotent).
 """
 
@@ -236,14 +236,14 @@ def traced_tool(name: str) -> Callable[[F], F]:
 def instrument_tracing(mcp_server: Any) -> bool:
     """Wrap ``mcp_server``'s tool dispatcher with a span (idempotent).
 
-    Wraps the FastMCP ``ToolManager.call_tool`` entry point -- the single
+    Wraps the MCPServer ``ToolManager.call_tool`` entry point -- the single
     funnel every tool invocation passes through -- so each dispatch opens a
     span named ``mcp.tool.<name>``. When tracing is inactive the span is a
     no-op, so the wrapper adds negligible overhead. A server is only ever
     wrapped once; repeated calls are no-ops.
 
     Args:
-        mcp_server: The FastMCP server whose dispatcher to wrap. An object
+        mcp_server: The MCPServer server whose dispatcher to wrap. An object
             without a ``_tool_manager`` (e.g. a test fake) is left
             untouched.
 

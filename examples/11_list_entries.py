@@ -16,7 +16,9 @@ from camt053_mcp.server import list_entries
 
 
 def main() -> None:
-    xml = (Path(__file__).parent / "_data" / "sample_statement.xml").read_text()
+    xml = (
+        Path(__file__).parent / "_data" / "sample_statement.xml"
+    ).read_text()
 
     full = list_entries(xml)
     print(f"Full list: {len(full)} entries")

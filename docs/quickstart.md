@@ -81,7 +81,15 @@ from camt053_mcp.server import server
 
 async def main() -> None:
     result = await server.call_tool("list_message_types", {})
-    content = result[0] if isinstance(result, tuple) else result
+    # mcp 2.x returns a CallToolResult (read .content); 1.x
+    # returns the content list, or a (content, meta) tuple.
+    content = getattr(result, "content", None)
+    if content is None:
+        # mcp 2.x returns a CallToolResult (read .content); 1.x
+        # returns the content list, or a (content, meta) tuple.
+        content = getattr(result, "content", None)
+        if content is None:
+            content = result[0] if isinstance(result, tuple) else result
     print(content[0].text)
 
 

@@ -290,7 +290,15 @@ statement_xml = """<?xml version="1.0" encoding="UTF-8"?>
 async def main() -> None:
     async def call(name, args):
         result = await server.call_tool(name, args)
-        content = result[0] if isinstance(result, tuple) else result
+        # mcp 2.x returns a CallToolResult (read .content); 1.x
+        # returns the content list, or a (content, meta) tuple.
+        content = getattr(result, "content", None)
+        if content is None:
+            # mcp 2.x returns a CallToolResult (read .content); 1.x
+            # returns the content list, or a (content, meta) tuple.
+            content = getattr(result, "content", None)
+            if content is None:
+                content = result[0] if isinstance(result, tuple) else result
         return content[0].text if content else ""
 
     # Validate an identifier.

@@ -26,11 +26,11 @@ class HttpServerInfo:
 def http_server():
     """Serve the MCP server over authenticated streamable HTTP.
 
-    Boots the real stack -- FastMCP streamable-HTTP app wrapped in
+    Boots the real stack -- MCPServer streamable-HTTP app wrapped in
     ``BearerTokenMiddleware``, served by uvicorn -- in a daemon thread
     on an ephemeral loopback port, and yields an :class:`HttpServerInfo`
     with the endpoint URL and required bearer token. Shared
-    session-wide: FastMCP's streamable-HTTP session manager can only be
+    session-wide: MCPServer's streamable-HTTP session manager can only be
     run once per server instance, so every HTTP test (auth, tenant
     round-trip, stress) talks to this one server.
     """

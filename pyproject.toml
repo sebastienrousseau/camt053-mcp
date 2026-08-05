@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.14"
+version = "0.0.15"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0"
@@ -22,7 +22,7 @@ camt053-loader-mt942 = ">=0.0.1"
 # Capped <2: mcp 2.0 removed mcp.server.fastmcp (the FastMCP import this
 # server uses), which breaks a plain `pip install .` (e.g. the MCP Inspector
 # CI job). Hold at 1.x until the server is ported to the mcp 2.0 API.
-mcp = ">=1.2,<2"
+mcp = ">=1.2,<3"
 # OAuth 2.1 resource-server JWT validation (camt053_mcp.oauth): PyJWT
 # is already in the tree via the MCP SDK, but we import it directly so
 # it is pinned explicitly; [crypto] guarantees RSA/EC JWKS support.
@@ -153,6 +153,14 @@ exclude = [
     ".venv/",
     ".eggs/",
 ]
+
+# The MCP server object comes from _mcp_compat, which returns either
+# mcp 2.x's MCPServer or mcp 1.x's FastMCP and is therefore typed Any,
+# so @server.tool()/@server.resource() read as untyped decorators. The
+# decorated functions themselves are fully annotated.
+[[tool.mypy.overrides]]
+module = "camt053_mcp.server"
+disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
 module = "mcp.*"

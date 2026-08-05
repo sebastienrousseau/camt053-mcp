@@ -34,7 +34,7 @@ Instrumentation points:
 * :class:`MetricsMiddleware` wraps the (already auth-wrapped) ASGI app
   as the **outermost** layer, so rejected requests are counted too,
   and serves ``GET /metrics`` itself.
-* :func:`instrument_tools` wraps the FastMCP tool manager's
+* :func:`instrument_tools` wraps the MCPServer tool manager's
   ``call_tool`` dispatcher once (idempotent), timing every invocation
   regardless of transport.
 
@@ -198,7 +198,7 @@ def classify_outcome(result: Any) -> str:
 def instrument_tools(mcp_server: Any) -> bool:
     """Wrap ``mcp_server``'s tool dispatcher with metrics (idempotent).
 
-    Wraps the FastMCP ``ToolManager.call_tool`` entry point -- the
+    Wraps the MCPServer ``ToolManager.call_tool`` entry point -- the
     single funnel every tool invocation passes through -- recording
     :data:`TOOL_INVOCATIONS` and :data:`TOOL_LATENCY` per call, and
     emitting one ``tool.invoked`` audit record with session-to-args
@@ -206,7 +206,7 @@ def instrument_tools(mcp_server: Any) -> bool:
     server is only ever wrapped once; repeated calls are no-ops.
 
     Args:
-        mcp_server: The FastMCP server whose dispatcher to wrap. An
+        mcp_server: The MCPServer server whose dispatcher to wrap. An
             object without a ``_tool_manager`` (e.g. the transport
             test fakes, or a future SDK that renames the attribute)
             is left untouched.

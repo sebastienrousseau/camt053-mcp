@@ -27,7 +27,7 @@ together and owns the CLI-facing pieces (bind parsing, auth-mode
 resolution, uvicorn):
 
 * **Bearer-token middleware.** :class:`BearerTokenMiddleware` is a pure
-  ASGI wrapper around FastMCP's streamable-HTTP Starlette app. Every
+  ASGI wrapper around MCPServer's streamable-HTTP Starlette app. Every
   HTTP request must carry ``Authorization: Bearer <token>`` matching
   the ``CAMT053_MCP_TOKEN`` environment variable (compared with
   :func:`hmac.compare_digest` to avoid timing leaks); anything else is
@@ -82,7 +82,7 @@ from camt053_mcp.auditing import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from mcp.server.fastmcp import FastMCP
+    from camt053_mcp._mcp_compat import MCPServer
 
 __all__ = [
     "AUDIT_HMAC_KEY_ENV",
@@ -147,7 +147,7 @@ def parse_bind(bind: str) -> tuple[str, int]:
 class BearerTokenMiddleware:
     """Pure ASGI middleware enforcing ``Authorization: Bearer`` auth.
 
-    Wraps FastMCP's streamable-HTTP Starlette app. Every HTTP request
+    Wraps MCPServer's streamable-HTTP Starlette app. Every HTTP request
     must present exactly ``Authorization: Bearer <token>``; a missing or
     wrong credential is rejected ``401`` (with ``WWW-Authenticate:
     Bearer``) before reaching the MCP session manager. Authorized
@@ -165,7 +165,7 @@ class BearerTokenMiddleware:
         """Wrap ``app``, requiring ``token`` on every HTTP request.
 
         Args:
-            app: The downstream ASGI application (FastMCP's
+            app: The downstream ASGI application (MCPServer's
                 streamable-HTTP Starlette app).
             token: The bearer token every request must present.
         """
@@ -219,7 +219,7 @@ class BearerTokenMiddleware:
 
 
 def build_http_app(
-    mcp_server: FastMCP,
+    mcp_server: MCPServer,
     token: str | None = None,
     oauth_config: Any = None,
 ) -> ASGIApp:
@@ -232,14 +232,14 @@ def build_http_app(
     :class:`BearerTokenMiddleware`.
 
     Args:
-        mcp_server: The FastMCP server to expose over HTTP.
+        mcp_server: The MCPServer server to expose over HTTP.
         token: The static dev-mode bearer token, when OAuth is not
             configured.
         oauth_config: A :class:`camt053_mcp.oauth.OAuthConfig`; takes
             precedence over ``token``.
 
     Returns:
-        FastMCP's streamable-HTTP Starlette app (MCP endpoint at
+        MCPServer's streamable-HTTP Starlette app (MCP endpoint at
         ``/mcp``) wrapped in the selected auth middleware, itself
         wrapped in the observability layer
         (:class:`camt053_mcp.observability.MetricsMiddleware`, which
@@ -265,7 +265,9 @@ def build_http_app(
     return observability.MetricsMiddleware(authed)
 
 
-def run_http(mcp_server: FastMCP, bind: str, token: str | None = None) -> None:
+def run_http(
+    mcp_server: MCPServer, bind: str, token: str | None = None
+) -> None:
     """Serve the MCP server over authenticated streamable HTTP.
 
     Blocks until the process is stopped. Auth is resolved from the
@@ -285,7 +287,7 @@ def run_http(mcp_server: FastMCP, bind: str, token: str | None = None) -> None:
     unauthenticated multi-tenant endpoint.
 
     Args:
-        mcp_server: The FastMCP server to expose.
+        mcp_server: The MCPServer server to expose.
         bind: The ``HOST:PORT`` to listen on (see :func:`parse_bind`).
         token: The static bearer token; ``None`` reads
             :data:`TOKEN_ENV`.

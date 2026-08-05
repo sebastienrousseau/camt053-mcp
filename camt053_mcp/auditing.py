@@ -50,7 +50,7 @@ Three concerns live here:
 Tenant context also lives here (:data:`_tenant_var`,
 :func:`current_tenant`): the auth middlewares set the context
 variable per request, and tools resolve it -- preferring the live
-HTTP request bound to the FastMCP ``Context``, which survives task
+HTTP request bound to the MCPServer ``Context``, which survives task
 hops inside the MCP session manager.
 """
 
@@ -69,7 +69,7 @@ from camt053.audit import HashChain
 from camt053.logging import redact_value
 
 if TYPE_CHECKING:  # pragma: no cover
-    from mcp.server.fastmcp import Context
+    from camt053_mcp._mcp_compat import Context
 
 __all__ = [
     "AUDIT_HMAC_KEY_ENV",
@@ -269,7 +269,7 @@ def redacted_arguments(arguments: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _session_info(ctx: Any) -> tuple[str | None, str | None]:
-    """Extract (session id, request id) from a FastMCP context.
+    """Extract (session id, request id) from a MCPServer context.
 
     Best effort: over streamable HTTP the MCP session id is the
     ``mcp-session-id`` request header; the request id is the JSON-RPC
@@ -277,7 +277,7 @@ def _session_info(ctx: Any) -> tuple[str | None, str | None]:
     SDK raises ``ValueError``) both are ``None``.
 
     Args:
-        ctx: The FastMCP ``Context`` of the running tool, or ``None``.
+        ctx: The MCPServer ``Context`` of the running tool, or ``None``.
 
     Returns:
         The ``(session_id, request_id)`` pair, each ``None`` when
@@ -315,7 +315,7 @@ def audit_tool_invocation(
     Args:
         tool: The invoked tool's name.
         arguments: The raw JSON-RPC tool arguments.
-        ctx: The FastMCP ``Context`` of the call, or ``None``.
+        ctx: The MCPServer ``Context`` of the call, or ``None``.
         outcome: The dispatch outcome label.
 
     Returns:
@@ -343,7 +343,7 @@ def current_tenant(ctx: Context | None = None) -> str | None:
     Resolution order:
 
     1. The ``Camt053-Account`` header of the HTTP request bound to the
-       FastMCP ``ctx`` (``ctx.request_context.request``), when the call
+       MCPServer ``ctx`` (``ctx.request_context.request``), when the call
        arrived over the streamable-HTTP transport. This is the reliable
        path: the MCP session manager may execute a tool in a different
        task than the request handler, so the request object -- not the
@@ -352,7 +352,7 @@ def current_tenant(ctx: Context | None = None) -> str | None:
     3. ``None`` -- e.g. on stdio, where no HTTP headers exist.
 
     Args:
-        ctx: The FastMCP request context of the running tool, when the
+        ctx: The MCPServer request context of the running tool, when the
             tool has one; ``None`` falls straight to the context variable.
     """
     if ctx is not None:

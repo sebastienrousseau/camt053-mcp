@@ -55,7 +55,7 @@ def _memory_exporter():
 
 
 class _FakeManager:
-    """A stand-in FastMCP ToolManager recording its dispatches."""
+    """A stand-in MCPServer ToolManager recording its dispatches."""
 
     def __init__(self, result=None):
         """Store the scripted ``result`` returned by call_tool."""

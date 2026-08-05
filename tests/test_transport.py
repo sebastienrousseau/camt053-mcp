@@ -25,7 +25,7 @@ Covers, per the issue's acceptance criteria:
 * audit records carry service name + tenant scope.
 
 The unit tests exercise every branch deterministically in-process; the
-integration tests drive the real stack (uvicorn + middleware + FastMCP
+integration tests drive the real stack (uvicorn + middleware + MCPServer
 streamable HTTP + MCP client SDK) via the session-scoped
 ``http_server`` fixture.
 """
@@ -45,10 +45,11 @@ from mcp.client.streamable_http import streamable_http_client  # noqa: E402
 
 import camt053_mcp.server as server  # noqa: E402
 from camt053_mcp import transport  # noqa: E402
+from camt053_mcp._mcp_compat import result_is_error
 
 
 def _fake_ctx(request):
-    """Build a minimal stand-in for a FastMCP Context wrapping ``request``."""
+    """Build a minimal stand-in for a MCPServer Context wrapping ``request``."""
     return SimpleNamespace(request_context=SimpleNamespace(request=request))
 
 
@@ -488,15 +489,12 @@ def test_http_wrong_bearer_is_401(http_server):
 async def _call_tool_over_http(url, headers, tool_name, arguments):
     """Initialize an MCP session over HTTP and call one tool."""
     async with httpx.AsyncClient(headers=headers, timeout=30) as client:
-        async with streamable_http_client(url, http_client=client) as (
-            read_stream,
-            write_stream,
-            _,
-        ):
+        async with streamable_http_client(url, http_client=client) as _streams:
+            read_stream, write_stream = _streams[0], _streams[1]
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 result = await session.call_tool(tool_name, arguments)
-    assert not result.isError
+    assert not result_is_error(result)
     return json.loads(result.content[0].text)
 
 

@@ -16,7 +16,9 @@ from camt053_mcp.server import check_cbpr_readiness
 
 
 def main() -> None:
-    xml = (Path(__file__).parent / "_data" / "sample_statement.xml").read_text()
+    xml = (
+        Path(__file__).parent / "_data" / "sample_statement.xml"
+    ).read_text()
     report = check_cbpr_readiness(xml)
     print(f"ready    : {report.get('ready')}")
     print(f"findings : {len(report.get('findings', []))}")

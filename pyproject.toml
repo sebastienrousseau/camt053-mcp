@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.15"
+version = "0.0.16"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0"
@@ -16,7 +16,7 @@ camt053-mcp = "camt053_mcp.server:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-camt053 = ">=0.0.6,<1"
+camt053 = ">=0.0.16,<1"
 camt053-loader-mt940 = ">=0.0.9"
 camt053-loader-mt942 = ">=0.0.1"
 # Capped <2: mcp 2.0 removed mcp.server.fastmcp (the FastMCP import this

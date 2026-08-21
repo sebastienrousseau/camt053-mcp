@@ -168,14 +168,14 @@ uvloop = ["uvloop (>=0.15.2) ; sys_platform != \"win32\"", "winloop (>=0.5.0) ; 
 
 [[package]]
 name = "camt053"
-version = "0.0.15"
+version = "0.0.16"
 description = "Camt053 is a Python library for reading ISO 20022 camt Bank-to-Customer Statements (camt.053/052/054) and generating validated reversing entries by return reason code (e.g. AC04 Closed Account)."
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "camt053-0.0.15-py3-none-any.whl", hash = "sha256:54ab4a34bb54b74b7e4c56cacb336eafdbbc19dfc0d958c6b4bfb8f62537ab69"},
-    {file = "camt053-0.0.15.tar.gz", hash = "sha256:8e77bd97d49d014a3bab74c8ac6dd7a0ec72f367a5f91777bac60e068bffd9c0"},
+    {file = "camt053-0.0.16-py3-none-any.whl", hash = "sha256:7d89001da6a4a173ae101a3fab1b4eeeda7027421d05d55748556e170ebd8c75"},
+    {file = "camt053-0.0.16.tar.gz", hash = "sha256:1e6ce92c71cd7a43721f608d39d405035db0958edb68c78c4f500ee7a9bf59d2"},
 ]
 
 [package.dependencies]
@@ -194,6 +194,7 @@ uvicorn = {version = ">=0.20", extras = ["standard"]}
 xmlschema = ">=3.4.0,<4.0.0"
 
 [package.extras]
+fast = ["lxml (>=5.0,<7)"]
 telemetry = ["opentelemetry-api (>=1.20)"]
 
 [[package]]
@@ -2917,4 +2918,4 @@ vector = ["sqlite-vec"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "5d61b879049a698a5cc9b58592000b6fc0463be993ec87b7ecc4427491c575ad"
+content-hash = "b8017a36b576d83322cb188e1092819b47544f0b5bf3aa415bba19b4281532b3"

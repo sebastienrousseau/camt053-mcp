@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.16] - 2026-08-21
+
+Suite release with `camt053` 0.0.16. No functional change in this
+package.
+
+### Changed
+
+- **Version aligned to the suite.** Every package in the `camt053`
+  suite now ships the same number, so there is no compatibility table to
+  consult. See `camt053.suite`, which a daily job checks against PyPI.
+
+- **The `camt053` floor moves to `>=0.0.16`,** from `>=0.0.6`. That
+  floor had not been revisited in nine releases — it still resolved, so
+  nothing ever complained about it.
+
 ## [0.0.14] - 2026-07-16
 
 The **production-auth and observability** cut: OAuth 2.1

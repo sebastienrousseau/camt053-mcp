@@ -64,6 +64,12 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
 
+      # The benchmark asserts no timing threshold -- wall-clock is not
+      # comparable between runners. This proves it still executes against the
+      # current API, so it cannot rot into a file that reads as verified.
+      - name: Run the benchmark
+        run: python benches/bench_tool_dispatch.py --quick
+
       - name: Enforce 100% docstring coverage
         run: interrogate -c pyproject.toml camt053_mcp
 
@@ -85,10 +91,10 @@ jobs:
         run: pip install --require-hashes -r requirements/lint.txt
 
       - name: Ruff check
-        run: ruff check camt053_mcp/
+        run: ruff check camt053_mcp/ tests/ benches/
 
       - name: Black check
-        run: black --check camt053_mcp/ tests/
+        run: black --check camt053_mcp/ tests/ benches/
 
       - name: Mypy
         run: mypy camt053_mcp/

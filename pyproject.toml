@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.17"
+version = "0.0.18"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0 OR MIT"
@@ -66,6 +66,11 @@ ruff = ">=0.1,<0.17"
 mypy = ">=1.11,<3.0"
 interrogate = "^1.7"
 bandit = "^1.7.0"
+# tests/test_suite_conformance.py parses pyproject.toml. tomllib is
+# stdlib only from 3.11 and the suite floor is 3.10, so the backport is
+# needed there, or the conformance gate simply does not run on 3.10.
+tomli = { version = ">=2", python = "<3.11" }
+packaging = ">=23"
 
 [tool.interrogate]
 fail-under = 100
@@ -77,8 +82,14 @@ verbose = 1
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+# tests/test_suite_conformance.py is generated and vendored from one
+# canonical copy shared by all 32 repositories, and checksummed by its own
+# test. The suite uses three different line lengths, so letting each
+# repository's formatter rewrite it would make the checksum unsatisfiable
+# everywhere. Excluded for the same reason any generated file is.
 [tool.black]
 line-length = 79
+extend-exclude = "tests/test_suite_conformance\\.py"
 target-version = ['py310']
 
 [tool.pytest.ini_options]

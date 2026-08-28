@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.18] - 2026-08-28
+
+Brings this repository onto the **suite conformance gate**.
+
+### Added
+
+- **`tests/test_suite_conformance.py`** — 33 invariants shared by every
+  repository in the suite, vendored from one canonical copy and checksummed
+  by its own test. Editing the local copy fails by design, so no repository
+  can quietly weaken a shared gate.
+
+- **`benches/bench_tool_dispatch.py`** — what the MCP layer costs on top of
+  the library it wraps.
+
+  Two numbers: the **dispatch floor** (`list_message_types`, which touches no
+  XML, so whatever it costs is pure shell — currently well under a
+  microsecond), and **`us/entry` for `parse_statement` across document
+  sizes**. Flat `us/entry` means the shell adds no per-byte cost on top of
+  the parser. `camt053_mcp.auditing` truncates argument previews at 256
+  characters precisely so a 5 MB statement never reaches the audit log; a
+  regression there would show up here as `us/entry` climbing with size while
+  every unit test carried on passing.
+
+  It asserts no timing threshold — wall-clock is not comparable between
+  machines — but CI runs `--quick`, so a benchmark that stops compiling
+  fails the build rather than rotting.
+
+### Changed
+
+- CI lints and formats `benches/` and `tests/` alongside the package, and
+  runs the benchmark.
+- `tomli` (on 3.10) and `packaging` are declared dev dependencies. The
+  conformance gate parses `pyproject.toml`, and both had been relied on
+  transitively via pytest. A gate that silently stops running is worse than
+  no gate.
+- `tests/test_suite_conformance.py` is excluded from black. It is generated,
+  and the suite uses three different line lengths.
+
 ## [0.0.17] - 2026-08-28
 
 Suite release with `camt053` 0.0.17, which moves to **xmlschema 4**. No

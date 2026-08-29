@@ -10,7 +10,7 @@ name: Suite Consistency
 # floor that reached nobody.
 on:
   schedule:
-    - cron: "43 6 * * *"
+    - cron: "49 6 * * *"
   workflow_dispatch:
 
 permissions:

@@ -10,8 +10,9 @@ tests. It just quietly means something different from what it says.
 
 Two failures this catches, both of which had already happened here:
 
-* **A member left behind.** The camt053 packages carried 0.0.18, 0.0.18, 0.0.19, 0.0.18, 0.0.16 and 0.0.16 at the same
-  moment -- different numbers for one suite.
+* **A member left behind.** The camt053 packages disagreed:
+  0.0.18, 0.0.18, 0.0.19, 0.0.18, 0.0.16 and 0.0.16
+  -- different numbers for one suite.
 
 * **A version bumped in the tree and never released.** Three repositories
   in the wider suite have done this, each time stranding a `cryptography`

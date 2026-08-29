@@ -23,7 +23,7 @@ Compose, Kubernetes, Prometheus/Grafana), see the core library's
 
 Every recipe assumes:
 
-- Python 3.12 (3.10 / 3.11 also supported).
+- Python 3.12 (3.10, 3.11, 3.13 and 3.14 also supported and tested in CI).
 - The server is launched as `camt053-mcp --transport=http`; the
   MCP endpoint is `http://HOST:PORT/mcp` (streamable HTTP).
 - TLS terminates at a reverse proxy (nginx, Cloud Load Balancer,

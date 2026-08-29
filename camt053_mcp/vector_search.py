@@ -79,14 +79,45 @@ _METHOD = (
 )
 
 #: Install hint returned when the optional ``[vector]`` extra is absent.
+_NO_EXTENSION_HINT = (
+    "search_rulebook_vector needs a Python built with loadable SQLite "
+    "extension support, which this interpreter lacks "
+    "(sqlite3.Connection.enable_load_extension is missing). Reinstall "
+    "Python from a build configured with "
+    "--enable-loadable-sqlite-extensions -- python.org macOS installers "
+    "and some distribution packages ship it disabled. Homebrew, uv and "
+    "pyenv builds normally have it enabled."
+)
+
 _INSTALL_HINT = (
     "search_rulebook_vector requires the optional 'vector' extra "
     "(sqlite-vec). Install it with: pip install 'camt053-mcp[vector]'"
 )
 
 
-class VectorExtraNotInstalled(RuntimeError):
+class VectorSearchUnavailable(RuntimeError):
+    """Base for the reasons vector search cannot run on this machine.
+
+    Both causes are environmental rather than a fault in the query, and
+    both are reported to the caller as an actionable error string rather
+    than raised through the tool boundary.
+    """
+
+
+class VectorExtraNotInstalled(VectorSearchUnavailable):
     """Raised when the optional ``[vector]`` extra (sqlite-vec) is absent."""
+
+
+class VectorExtensionUnsupported(VectorSearchUnavailable):
+    """Raised when this interpreter cannot load SQLite extensions.
+
+    ``sqlite3.Connection.enable_load_extension`` only exists when CPython
+    was compiled with ``--enable-loadable-sqlite-extensions``. The
+    python.org macOS installers and several distribution builds ship it
+    disabled, so ``sqlite-vec`` can be installed and still be unloadable.
+    Without this check that case surfaces as a bare ``AttributeError``
+    from deep inside the index build, which tells the caller nothing.
+    """
 
 
 #: Memoised corpus: a list of ``(clause dict, embedding)`` pairs built once
@@ -229,6 +260,8 @@ def _build_index(
 
     Raises:
         VectorExtraNotInstalled: When the ``[vector]`` extra is absent.
+        VectorExtensionUnsupported: When this interpreter was built
+            without loadable SQLite extension support.
     """
     try:
         sqlite_vec = _import_sqlite_vec()
@@ -236,6 +269,9 @@ def _build_index(
         raise VectorExtraNotInstalled(_INSTALL_HINT) from exc
 
     conn = sqlite3.connect(":memory:")
+    if not hasattr(conn, "enable_load_extension"):
+        conn.close()
+        raise VectorExtensionUnsupported(_NO_EXTENSION_HINT)
     conn.enable_load_extension(True)
     sqlite_vec.load(conn)
     conn.enable_load_extension(False)
@@ -278,7 +314,7 @@ def search(query: str, top_k: int = 5) -> dict[str, Any]:
     corpus = _corpus()
     try:
         conn = _build_index(corpus)
-    except VectorExtraNotInstalled as exc:
+    except VectorSearchUnavailable as exc:
         return {"error": str(exc)}
 
     try:

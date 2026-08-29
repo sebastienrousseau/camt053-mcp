@@ -22,10 +22,34 @@ The corpus under test is *only* the curated clauses in
 from __future__ import annotations
 
 import math
+import sqlite3
 
 import pytest
 
 pytest.importorskip("sqlite_vec")
+
+
+def _interpreter_loads_extensions() -> bool:
+    """Whether this CPython can load SQLite extensions at all.
+
+    ``enable_load_extension`` is compiled in via
+    ``--enable-loadable-sqlite-extensions``; the python.org macOS
+    installers ship it disabled. On such a build sqlite-vec imports
+    fine and still cannot be loaded, so the tests that need a live
+    index skip rather than fail -- the same courtesy the module-level
+    ``importorskip`` above extends to a missing package.
+    """
+    conn = sqlite3.connect(":memory:")
+    try:
+        return hasattr(conn, "enable_load_extension")
+    finally:
+        conn.close()
+
+
+needs_extensions = pytest.mark.skipif(
+    not _interpreter_loads_extensions(),
+    reason="CPython built without --enable-loadable-sqlite-extensions",
+)
 
 from camt053_mcp import rulebook, vector_search  # noqa: E402
 from camt053_mcp.server import search_rulebook_vector  # noqa: E402
@@ -53,6 +77,7 @@ class TestEmbedding:
         assert vec == [0.0] * vector_search._EMBED_DIM
 
 
+@needs_extensions
 class TestSearch:
     """Ranked retrieval over the curated rulebook clauses."""
 
@@ -128,7 +153,49 @@ class TestMissingExtra:
         assert "error" in result
         assert "camt053-mcp[vector]" in result["error"]
 
+    def test_interpreter_without_extension_support_is_explained(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A Python built without loadable extensions says so.
 
+        ``enable_load_extension`` only exists when CPython was compiled
+        with ``--enable-loadable-sqlite-extensions``; the python.org
+        macOS installers ship it disabled. Before this was guarded the
+        caller got a bare ``AttributeError`` raised from inside the index
+        build, naming an attribute rather than the thing to fix.
+        """
+
+        class _NoExtensionConn:
+            """A connection from an interpreter lacking extension support."""
+
+            closed = False
+
+            def close(self) -> None:
+                """Record that the dead connection was released."""
+                _NoExtensionConn.closed = True
+
+        monkeypatch.setattr(
+            vector_search.sqlite3, "connect", lambda _: _NoExtensionConn()
+        )
+        result = vector_search.search("structured address", top_k=3)
+        assert "error" in result
+        assert "enable_load_extension" in result["error"]
+        assert "--enable-loadable-sqlite-extensions" in result["error"]
+        assert _NoExtensionConn.closed, "the unusable connection leaked"
+
+    def test_both_causes_share_one_catchable_base(self) -> None:
+        """Callers can handle either cause with a single except clause."""
+        assert issubclass(
+            vector_search.VectorExtraNotInstalled,
+            vector_search.VectorSearchUnavailable,
+        )
+        assert issubclass(
+            vector_search.VectorExtensionUnsupported,
+            vector_search.VectorSearchUnavailable,
+        )
+
+
+@needs_extensions
 class TestServerTool:
     """The MCP tool wrapper delegates to the search module."""
 

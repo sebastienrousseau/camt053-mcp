@@ -203,6 +203,21 @@ def _changelog_versions() -> list[str]:
     return HEADING.findall(CHANGELOG.read_text(encoding="utf-8"))
 
 
+def _addopts() -> str:
+    """pytest accepts ``addopts`` as a list or a single string.
+
+    Both forms are in use across the suite. Joining a *string* with
+    ``" ".join`` spaces out its characters, so a gate configured the string
+    way reads as absent — which is exactly the false positive this helper
+    exists to stop.
+    """
+    ini = _pyproject().get("tool", {}).get("pytest", {}).get("ini_options", {})
+    addopts = ini.get("addopts", [])
+    if isinstance(addopts, str):
+        return addopts
+    return " ".join(addopts)
+
+
 # ---------------------------------------------------------------------------
 # Versioning
 # ---------------------------------------------------------------------------
@@ -266,25 +281,67 @@ def test_the_changelog_documents_each_version_once() -> None:
 # The coverage gate
 # ---------------------------------------------------------------------------
 def test_a_coverage_gate_is_configured_and_meets_the_suite_floor() -> None:
-    """`acmt001-lsp` sat at 73% because nothing was watching."""
-    ini = _pyproject()["tool"]["pytest"]["ini_options"]
-    addopts = " ".join(ini.get("addopts", []))
-    match = re.search(r"--cov-fail-under=(\d+)", addopts)
-    assert match, (
-        "no --cov-fail-under in [tool.pytest.ini_options] addopts: coverage "
-        "can fall to zero and the build stays green"
+    """The floor must hold for a plain local ``pytest``, not only in CI.
+
+    Two things are needed, and most of the suite has only the second:
+
+    * ``--cov`` in ``addopts``, so coverage runs at all. Without it a local
+      ``pytest`` measures nothing, the developer sees green, and CI tells
+      them otherwise.
+    * A floor. Either ``--cov-fail-under`` in ``addopts`` or ``fail_under``
+      under ``[tool.coverage.report]`` — pytest-cov honours the latter, so
+      the number belongs there and nowhere else. Stating it twice is how
+      two values meant to be equal drift apart.
+
+    Most of the suite does enforce a floor from the CI workflow, so this is
+    not a hole through which coverage silently falls. `acmt001-lsp` is the
+    case that had neither, and sat at 73%.
+    """
+    addopts = _addopts()
+    assert "--cov" in addopts, (
+        "no --cov in [tool.pytest.ini_options] addopts, so a local pytest "
+        "measures no coverage at all and only CI ever checks"
     )
-    gate = int(match.group(1))
+
+    inline = re.search(r"--cov-fail-under=([\d.]+)", addopts)
+    configured = (
+        _pyproject()
+        .get("tool", {})
+        .get("coverage", {})
+        .get("report", {})
+        .get("fail_under")
+    )
+    assert inline or configured is not None, (
+        "coverage runs but has no floor: neither --cov-fail-under in "
+        "addopts nor fail_under under [tool.coverage.report]"
+    )
+    gate = float(inline.group(1)) if inline else float(configured)
     assert gate >= MINIMUM_COVERAGE, (
         f"the coverage gate is {gate}%, below the suite floor of "
         f"{MINIMUM_COVERAGE}%"
     )
 
 
+def test_the_coverage_floor_is_stated_once() -> None:
+    """Two copies of the same number is how they stop being the same."""
+    inline = re.search(r"--cov-fail-under=([\d.]+)", _addopts())
+    configured = (
+        _pyproject()
+        .get("tool", {})
+        .get("coverage", {})
+        .get("report", {})
+        .get("fail_under")
+    )
+    if inline and configured is not None:
+        assert float(inline.group(1)) == float(configured), (
+            f"addopts says --cov-fail-under={inline.group(1)} but "
+            f"[tool.coverage.report] says fail_under={configured}"
+        )
+
+
 def test_coverage_measures_branches_not_just_lines() -> None:
     """Line coverage calls a half-tested `if` fully covered."""
-    ini = _pyproject()["tool"]["pytest"]["ini_options"]
-    addopts = " ".join(ini.get("addopts", []))
+    addopts = _addopts()
     branch = (
         _pyproject()
         .get("tool", {})
@@ -479,6 +536,49 @@ def test_ci_runs_on_pull_requests() -> None:
     )
 
 
+def test_a_scheduled_check_compares_the_tree_to_what_is_published() -> None:
+    """Catch the release that was bumped in the tree and never shipped.
+
+    This has now happened three times in the suite -- `acmt001-mcp` 0.0.7,
+    `ap2-iso20022` 0.0.3, `camt-exceptions` 0.0.16 -- and each time the
+    version carried a `cryptography` advisory floor that therefore reached
+    nobody. Nothing fails when it happens: the tree is consistent, the
+    tests pass, the changelog is written. Only PyPI disagrees, and only if
+    somebody goes and looks.
+
+    A test inside the repository cannot look, because at commit time the
+    tag legitimately does not exist yet. A shallow CI checkout cannot look
+    either -- `actions/checkout` fetches no tags by default, so a
+    git-based assertion would fail spuriously rather than catch anything.
+
+    What does work is a *scheduled* job that compares the tree against the
+    index, which is what `camt053` already does in
+    `scripts/check_suite_consistency.py`. This asserts the mechanism
+    exists rather than trying to replace it.
+    """
+    workflows = ROOT / ".github" / "workflows"
+    assert workflows.is_dir(), ".github/workflows/ is missing"
+    for path in workflows.glob("*.yml"):
+        text = path.read_text(encoding="utf-8")
+        # Matched on the bare word rather than the hostname. It catches
+        # strictly more -- "pypi.org", "PyPI", a pypi-json helper -- and
+        # it stops CodeQL reading a containment test against a
+        # dotted host as an incomplete URL sanitisation, which it did:
+        # py/incomplete-url-substring-sanitization, high severity, on a
+        # line that never validates a URL in the first place.
+        lowered = text.lower()
+        if "schedule:" in text and (
+            "pypi" in lowered or "consistency" in lowered
+        ):
+            return
+    raise AssertionError(
+        "no scheduled workflow compares this package's version against "
+        "what is published. A version bumped in the tree and never "
+        "released breaks nothing and is invisible until somebody looks; "
+        "see camt053's suite-consistency workflow for the pattern"
+    )
+
+
 def test_a_release_workflow_publishes_on_a_tag() -> None:
     """`pain001` had none: 96 tests, and releases cut by hand."""
     workflows = ROOT / ".github" / "workflows"
@@ -492,7 +592,7 @@ def test_a_release_workflow_publishes_on_a_tag() -> None:
 # ---------------------------------------------------------------------------
 # This file
 # ---------------------------------------------------------------------------
-CANONICAL_SHA256 = "9aa7cd3c7e3121beea6cbc5a74e4d28a71d792fc041363f9b66836d24e2b09ba"  # fmt: skip # noqa: E501
+CANONICAL_SHA256 = "387a0c93a502a8e774013b3f0a7bdf63153563c7b081d1f5d201ada9a53061fa"  # fmt: skip # noqa: E501
 
 
 def test_this_file_is_the_canonical_copy() -> None:
@@ -521,14 +621,40 @@ def test_this_file_is_the_canonical_copy() -> None:
     )
 
 
-def test_the_python_floor_matches_the_suite() -> None:
-    """A package supporting less than the rest cannot be installed with it."""
-    requires = str(
+def test_the_python_floor_is_at_least_the_suite_floor() -> None:
+    """A package supporting *less* than the suite cannot ship with it.
+
+    The floor is 3.10, which 30 of the 32 repositories declare. This
+    asserts nothing below that, rather than exactly that: a *higher* floor
+    is a compatibility decision somebody made, not a conformance failure,
+    and this test is not the place to overrule it.
+
+    One ecosystem does sit higher. `structured-address-fix` and
+    `structured-address-fix-mcp` both require >=3.12 — consistently, so it
+    reads as deliberate. The consequence is worth knowing rather than
+    silently passing: **those two cannot be installed alongside the rest
+    of the suite on 3.10 or 3.11.** Whether that is intended is a decision
+    for the maintainer; what would be a defect is a floor *below* 3.10, or
+    two members of one ecosystem disagreeing.
+    """
+    from packaging.specifiers import SpecifierSet
+    from packaging.version import Version
+
+    raw = str(
         _poetry().get("dependencies", {}).get("python")
         or _pyproject().get("project", {}).get("requires-python", "")
     )
-    assert "3.10" in requires, (
-        f"python constraint is {requires!r}; the suite floor is 3.10"
+    assert raw, "no Python requirement declared"
+
+    # Poetry's caret form is not PEP 440. `^3.10` means >=3.10,<4.
+    spec = raw
+    if spec.startswith("^"):
+        spec = f">={spec[1:]},<{int(spec[1:].split('.')[0]) + 1}"
+    spec = ",".join(spec.split())
+
+    specifier = SpecifierSet(spec)
+    assert not specifier.contains(Version("3.9")), (
+        f"python {raw} admits 3.9, below the suite floor of 3.10"
     )
 
 

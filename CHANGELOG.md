@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.20] - 2026-08-29
+
+Documents `search_rulebook_vector`, which was registered and absent from
+the README entirely, and aligns the `camt053` suite on one version.
+
+### Added
+
+- A **Rulebook search** section in the README and
+  `docs/vector-search.md` covering `search_rulebook_vector`: what it is
+  for, that retrieval is a deterministic lexical-vector cosine search
+  rather than a neural embedding model, that only the curated clause
+  summaries are indexed, and the two install requirements — the
+  `[vector]` extra and a CPython built with loadable SQLite extension
+  support.
+- `tests/test_readme_documents_every_tool.py`, which fails when a
+  registered tool is missing from the README, when a documented tool no
+  longer exists, or when the stated tool count is wrong. All three
+  conditions were live: two tools were undocumented and the count was
+  out by two.
+- `scripts/check_suite_consistency.py` and a scheduled `Suite
+  Consistency` workflow comparing this tree and every published member
+  of the suite against PyPI.
+
+### Fixed
+
+- `detect_statement_anomalies` was also registered and undocumented. It
+  is now listed.
+- The suite table said 22 MCP tools; the server registers 24.
+
+### Changed
+
+- Version aligned to `0.0.20` across all six `camt053` packages, which
+  had drifted to 0.0.18, 0.0.18, 0.0.19, 0.0.18, 0.0.16 and 0.0.16.
+
 ## [0.0.19] - 2026-08-29
 
 Tests on **Python 3.13 and 3.14**, and stops vector search from crashing

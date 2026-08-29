@@ -37,6 +37,7 @@ validated reversing-entry XML, all from your favourite MCP client.
 - [Tools](#tools)
 - [Prompts](#prompts)
 - [Resources](#resources)
+- [Rulebook search](#rulebook-search)
 - [Using the tools](#using-the-tools)
 - [The camt053 suite](#the-camt053-suite)
 - [When not to use camt053-mcp](#when-not-to-use-camt053-mcp)
@@ -96,7 +97,7 @@ Python environment: start with one, add the rest as your workflow grows.
 
 | Server | Scope | Surface | Install | Use it when |
 |------|------|------|------|------|
-| [`camt053-mcp`](#install) | ISO 20022 `camt.053`/`camt.052` bank statements: parse, validate, filter, reverse; MT940/MT942 migration; CBPR+ readiness; journal export | 22 MCP tools · 4 prompts · 3 resources | `pip install camt053-mcp` | You work with bank-to-customer statements end to end — **this package**, the suite's flagship |
+| [`camt053-mcp`](#install) | ISO 20022 `camt.053`/`camt.052` bank statements: parse, validate, filter, reverse; MT940/MT942 migration; CBPR+ readiness; journal export | 24 MCP tools · 4 prompts · 3 resources | `pip install camt053-mcp` | You work with bank-to-customer statements end to end — **this package**, the suite's flagship |
 | [`iso20022-mcp`](https://github.com/sebastienrousseau/iso20022-mcp) | Unified gateway: `search` / `describe` / `validate` / `generate` / `parse` meta-tools routed across the `pain` · `pacs` · `camt` · `acmt` families | 7 meta-tools | `pip install "iso20022-mcp[all]"` | You want one entry point to every message family |
 | [`reconcile-mcp`](https://github.com/sebastienrousseau/reconcile-mcp) | Matches expected `pain.001` payments against observed `camt.053` entries — exact, partial, one-to-many, many-to-one, every match scored and explained | 7 MCP tools | `pip install reconcile-mcp` | You need explainable statement/payment reconciliation |
 | [`structured-address-fix-mcp`](https://github.com/sebastienrousseau/structured-address-fix-mcp) | ISO 20022 postal-address classification, assessment & remediation for the November 2026 structured-address cutover, plus a high-level orchestration layer — readiness scoring, clearing-profile linting, and audit evidence (`pacs.008` / `pain.001` debtor & creditor addresses) | 9 MCP tools | `pip install structured-address-fix-mcp` | You need debtor/creditor addresses cliff-ready ahead of 14 Nov 2026 |
@@ -197,12 +198,14 @@ identically to the CLI and REST API.
 - `get_cbpr_cutover_date` — Return the official CBPR+ cutover date (2026-11-16)
 - `cite_rulebook` — Quote a curated SEPA / CBPR+ / HVPS+ rulebook clause
 - `list_rulebook_clauses` — List the available rulebook citations (optionally filtered)
+- `search_rulebook_vector` — Find rulebook clauses by natural-language similarity when you do not know the clause id (needs the `[vector]` extra)
 - `export_journal` — Export statement entries as Xero `BankTransactions` or QBO `JournalEntry` payloads
 - `list_export_journal_targets` — List the accounting-platform targets `export_journal` supports
 - `classify_entry` — Classify a statement entry via MCP Sampling (uses the *client's* LLM)
 - `list_classify_entry_categories` — List the default categories `classify_entry` uses
 - `get_tenant_context` — Report the multi-tenant scope of the call (the `Camt053-Account` header on the HTTP transport; `None` over stdio)
 - `parse_statement` — Parse an incoming camt.05x statement into data
+- `detect_statement_anomalies` — Screen a statement for duplicate references, unusual fee deductions, and velocity spikes (deterministic rules, no model or network)
 - `list_entries` — List every entry across all statements (paginated)
 - `filter_entries` — Return entries carrying a return reason code (paginated)
 - `generate_reversal` — Generate a validated reversing-entry XML document
@@ -251,6 +254,74 @@ calling a tool. Each resource returns a JSON payload.
 Both back onto the shared `camt053.services` layer, so they stay in sync with
 the equivalent `list_return_reasons` / `list_message_types` tools. On an error
 they return a serialised `{"error": ...}` payload.
+
+## Rulebook search
+
+`cite_rulebook` needs a `scheme`, `version` and `clause` id. When you know
+what a rule is *about* but not what it is *called*,
+`search_rulebook_vector` closes that gap:
+
+```jsonc
+search_rulebook_vector("structured address requirement", top_k=3)
+{
+  "query": "structured address requirement",
+  "returned": 3,
+  "results": [
+    {
+      "scheme": "HVPS+",
+      "version": "2026",
+      "clause": "structured-address-alignment",
+      "title": "HVPS+ aligns with CBPR+ structured-address rule",
+      "score": 0.702729,
+      // ...
+    }
+  ]
+}
+```
+
+Take the winning `scheme`/`version`/`clause` and pass it to
+`cite_rulebook` for the full citation.
+
+**It is not a neural embedding model.** Retrieval is a deterministic
+lexical-vector cosine search: each clause and the query are hashed into a
+fixed 256-dimension term-frequency vector — whole words plus character
+3- and 4-grams, so `address` matches `addresses` without a stemmer —
+bucketed with BLAKE2b rather than Python's salted `hash`, and ranked with
+`sqlite-vec`. That has three consequences worth knowing:
+
+- The same query always returns the same ranking, in every process and
+  every CI run.
+- Nothing is downloaded and no network call happens at query time.
+- It matches wording, not meaning. A query sharing no vocabulary with a
+  clause will not find it, however related the concepts are.
+
+**Only the curated summaries are indexed** — the same ones behind
+`cite_rulebook`. No external, copyrighted, or auth-gated rulebook text is
+stored or searched.
+
+### Installing it
+
+`sqlite-vec` ships in an optional extra and is imported lazily, so the
+base install pulls in nothing:
+
+```sh
+python -m pip install 'camt053-mcp[vector]'
+```
+
+Without it the tool returns a plain error payload naming the extra
+rather than raising, so a client that calls it on a base install gets a
+usable message instead of a stack trace.
+
+There is a second requirement that is easy to miss: **your Python must be
+built with loadable SQLite extension support**. The python.org macOS
+installers and several distribution packages ship it disabled, in which
+case `sqlite-vec` installs perfectly and still cannot load. The tool
+detects that and says so, naming the build flag
+(`--enable-loadable-sqlite-extensions`) to look for. Homebrew, `uv` and
+`pyenv` builds normally have it enabled.
+
+See [docs/vector-search.md](docs/vector-search.md) for the retrieval
+design and its limits.
 
 ## Using the tools
 

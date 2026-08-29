@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.19] - 2026-08-29
+
+Tests on **Python 3.13 and 3.14**, and stops vector search from crashing
+on interpreters that cannot load SQLite extensions.
+
+### Added
+
+- CI now runs the suite on Python 3.13 and 3.14 alongside 3.10-3.12.
+  The supported floor is unchanged: `python = ">=3.10,<4.0"`.
+- `VectorSearchUnavailable`, a base class for the two environmental
+  reasons `search_rulebook_vector` cannot run, so a caller can handle
+  both with one `except` clause.
+- `VectorExtensionUnsupported`, raised when the interpreter was built
+  without `--enable-loadable-sqlite-extensions`.
+
+### Fixed
+
+- `search_rulebook_vector` raised a bare `AttributeError` from inside
+  the index build on a CPython compiled without loadable SQLite
+  extension support -- the python.org macOS installers and several
+  distribution packages ship it disabled, so `sqlite-vec` installs
+  cleanly and still cannot be loaded. The tool now returns the same
+  kind of actionable error string it already returned for a missing
+  `[vector]` extra, naming the build flag to look for.
+- The vector tests that need a live index now skip on such an
+  interpreter instead of failing, matching the existing
+  `importorskip` treatment of a missing `sqlite-vec`.
+
 ## [0.0.18] - 2026-08-28
 
 Brings this repository onto the **suite conformance gate**.

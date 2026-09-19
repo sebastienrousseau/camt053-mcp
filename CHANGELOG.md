@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `classify_entry` sent a sampling request to any client and waited for
+  an answer that a client without the sampling capability never gives,
+  so the call hung until the caller's timeout. The tool now asks the
+  session whether the client declared `sampling` at `initialize` and
+  returns the documented `{"error": ...}` envelope at once when it did
+  not. Found by scout's execution check over streamable HTTP.
 - The Glama and MCP-registry manifests (`glama.json`, `server.json`) named a
   release several versions old, so the directory listings advertised a stale
   install; both are stamped to the shipped version and a CI job now fails

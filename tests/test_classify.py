@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -28,6 +30,8 @@ ENTRY = {
 def _make_ctx(text: str | None, *, raise_exc: Exception | None = None):
     """Build a minimal mock context whose session.create_message returns ``text``."""
     ctx = mock.AsyncMock()
+    # The capability check is synchronous on the real ServerSession.
+    ctx.session.check_client_capability = mock.Mock(return_value=True)
     if raise_exc is not None:
         ctx.session.create_message.side_effect = raise_exc
     else:
@@ -118,6 +122,46 @@ class TestClassifyEntry:
         result = await classify.classify_entry(ctx, ENTRY)
         assert result["category"] == "payroll"
         assert result["confidence"] == 0.95
+
+    @pytest.mark.asyncio
+    async def test_client_without_sampling_capability_is_refused(
+        self,
+    ) -> None:
+        """A client that never declared sampling gets the envelope at once."""
+        ctx = _make_ctx('{"category": "fee", "confidence": 0.9}')
+        ctx.session.check_client_capability.return_value = False
+        out = await classify.classify_entry(ctx, {"amount": "1.00"})
+        assert "did not declare the sampling capability" in out["error"]
+        ctx.session.create_message.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_capability_check_failure_is_refused(self) -> None:
+        """A session that cannot answer the capability check cannot sample."""
+        ctx = _make_ctx('{"category": "fee", "confidence": 0.9}')
+        ctx.session.check_client_capability.side_effect = RuntimeError(
+            "not initialised"
+        )
+        out = await classify.classify_entry(ctx, {"amount": "1.00"})
+        assert "did not declare the sampling capability" in out["error"]
+        ctx.session.create_message.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_session_without_capability_check_still_samples(
+        self,
+    ) -> None:
+        """A bare session (no check) is assumed capable and asked."""
+
+        class _Session:
+            async def create_message(self, **_: Any) -> Any:
+                return SimpleNamespace(
+                    content=SimpleNamespace(
+                        text='{"category": "fee", "confidence": 0.5}'
+                    )
+                )
+
+        ctx = SimpleNamespace(session=_Session())
+        out = await classify.classify_entry(ctx, {"amount": "1.00"})
+        assert out["category"] == "fee"
 
     @pytest.mark.asyncio
     async def test_sampling_failure_yields_error(self) -> None:

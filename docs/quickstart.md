@@ -22,7 +22,7 @@ python -c "import camt053_mcp; print(camt053_mcp.__version__)"
 ## 2. Launch the server
 
 The package installs a `camt053-mcp` console entry point that starts
-the server over stdio (FastMCP's default transport):
+the server over stdio (the default transport; `--transport streamable-http` or `sse` for HTTP):
 
 ```sh
 camt053-mcp
@@ -245,7 +245,7 @@ see the [deployment cookbook](deployment-cookbook.md).
 
 ## 7. Next steps
 
-- Browse the full [tool catalog](../README.md#tools) (22 tools across
+- Browse the full [tool catalog](../README.md#tools) (24 tools across
   parsing, validation, identifier checking, return-reason filtering,
   reversal generation, CBPR+ readiness, MT94x migration, journal
   export, LLM classification, and tenant scoping).

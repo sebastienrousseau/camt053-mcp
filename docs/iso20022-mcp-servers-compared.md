@@ -33,9 +33,9 @@ ranges are kept aligned so they co-install in one environment.
 
 | Server | Scope | Surface |
 |------|------|------|
-| [`camt053-mcp`](https://github.com/sebastienrousseau/camt053-mcp) | `camt.053`/`camt.052` bank statements: parse, validate, filter, reverse; MT940/MT942 migration; CBPR+ readiness; Xero/QBO journal export | 22 MCP tools · 4 prompts · 3 resources |
+| [`camt053-mcp`](https://github.com/sebastienrousseau/camt053-mcp) | `camt.053`/`camt.052` bank statements: parse, validate, filter, reverse; MT940/MT942 migration; CBPR+ readiness; Xero/QBO journal export | 24 MCP tools · 4 prompts · 3 resources |
 | [`iso20022-mcp`](https://github.com/sebastienrousseau/iso20022-mcp) | Unified gateway routing `search` / `describe` / `validate` / `generate` / `parse` across the `pain` · `pacs` · `camt` · `acmt` families | 7 meta-tools |
-| [`reconcile-mcp`](https://github.com/sebastienrousseau/reconcile-mcp) | Explainable matching of expected `pain.001` payments against observed `camt.053` entries (exact, partial, one-to-many, many-to-one, scored) | 7 MCP tools |
+| [`reconcile-mcp`](https://github.com/sebastienrousseau/reconcile-mcp) | Explainable matching of expected `pain.001` payments against observed `camt.053` entries (exact, partial, one-to-many, many-to-one, scored) | 10 MCP tools |
 | [`bankstatementparser-mcp`](https://github.com/sebastienrousseau/bankstatementparser-mcp) | Multi-format statement ingestion: CAMT.053, pain.001, MT940, OFX/QFX, CSV | 5 MCP tools · 1 prompt · 1 resource |
 
 The suite also includes per-family servers for outbound messages —
@@ -61,7 +61,7 @@ documented.
 | camt coverage | Parse, validate, filter, reverse `camt.053`/`camt.052`; MT940/MT942 migration; CBPR+ readiness checks; `camt.056`/`camt.029` E&I via the gateway | Parse + XSD-validate `camt.053.001.08` only |
 | pain coverage | Generate and validate `pain.001` (v03–v12) and `pain.008` via `pain001-mcp`; reconcile against statements via `reconcile-mcp` | Parse + XSD-validate `pain.001.001.09` only |
 | pacs coverage | Generate, validate, parse, scheme-check `pacs.008` via `pacs008-mcp` | Parse + XSD-validate `pacs.008.001.08` and `pacs.002.001.10` |
-| Tools / prompts / resources | 41 MCP tools, 5 prompts, 4 resources across the four core servers | 9 tools; no prompts or resources documented |
+| Tools / prompts / resources | 46 MCP tools, 7 prompts, 9 resources across the four core servers | 9 tools; no prompts or resources documented |
 | MCP sampling | Yes — `camt053-mcp`'s `classify_entry` classifies statement entries using the *client's* LLM | Not documented |
 | Transports | stdio on all four; `camt053-mcp` adds streamable HTTP | stdio |
 | Auth | `camt053-mcp` HTTP transport: OAuth 2.1 resource-server auth (RFC 9728) with a static-bearer dev fallback, plus per-request tenant scoping | None documented |

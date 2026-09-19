@@ -82,7 +82,7 @@ from camt053_loader_mt942.loader import parse_mt942
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from camt053_mcp import __version__, classify, rulebook
+from camt053_mcp import __version__, _cli, _transports, classify, rulebook
 from camt053_mcp import export_journal as _export_journal
 from camt053_mcp import tracing as _tracing
 from camt053_mcp import transport as _transport
@@ -1778,21 +1778,36 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="camt053-mcp",
         description=(
-            "Camt053 MCP server: stdio by default; --transport=http "
-            "serves authenticated streamable HTTP for shared "
-            "multi-tenant deployments (OAuth 2.1 via the "
+            f"camt053-mcp {__version__}: an MCP server. Speaks stdio by "
+            "default; --transport=http serves authenticated streamable "
+            "HTTP for shared multi-tenant deployments (OAuth 2.1 via the "
             "CAMT053_MCP_OAUTH_* environment variables, or the "
-            f"static dev-mode {_transport.TOKEN_ENV} token)."
+            f"static dev-mode {_transport.TOKEN_ENV} token); "
+            "--transport=streamable-http and --transport=sse serve the "
+            "suite's unauthenticated HTTP transports on --host/--port."
         ),
+        # ``_cli.add_arguments`` defines ``--transport`` with the
+        # suite's three choices; the definition below replaces it with
+        # the four this server speaks while keeping ``--host``/``--port``.
+        conflict_handler="resolve",
     )
     parser.add_argument(
+        "--version",
+        action="version",
+        version=f"camt053-mcp {__version__}",
+    )
+    _cli.add_arguments(parser)
+    parser.add_argument(
         "--transport",
-        choices=("stdio", "http"),
+        choices=("stdio", "http", *_transports.TRANSPORTS[1:]),
         default="stdio",
         help=(
             "MCP transport to serve: 'stdio' (default; launched by a "
-            "local MCP client) or 'http' (streamable HTTP with "
-            "mandatory bearer-token auth)."
+            "local MCP client), 'http' (authenticated streamable HTTP, "
+            "see transport.py: mandatory bearer-token auth on --bind), "
+            "'streamable-http' (HTTP at --host:--port/mcp, protocol "
+            "2026-07-28 and 2025-11-25, no auth) or 'sse' (the older "
+            "HTTP+SSE transport at /sse and /messages/, no auth)."
         ),
     )
     parser.add_argument(
@@ -1814,7 +1829,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Requires the optional '[otel]' extra; without it tracing is "
             "silently skipped. When the flag is given without a URL "
             "(empty), the standard OTEL_EXPORTER_OTLP_ENDPOINT environment "
-            "variable is used. Applies to both stdio and http transports."
+            "variable is used. Applies to every transport."
         ),
     )
     return parser.parse_args(argv)
@@ -1826,7 +1841,10 @@ def main(argv: list[str] | None = None) -> None:
     Serves stdio by default -- existing behaviour, unchanged -- or
     authenticated streamable HTTP when invoked with ``--transport=http``
     (see :mod:`camt053_mcp.transport` for the auth, tenant-scoping, and
-    audit semantics).
+    audit semantics). ``--transport streamable-http`` or ``--transport
+    sse`` listens on ``--host``/``--port`` instead, without
+    authentication; see :mod:`camt053_mcp._cli` and
+    :mod:`camt053_mcp._transports`.
 
     When ``--otel-endpoint`` is supplied, opt-in OpenTelemetry tracing is
     initialised at startup and the tool dispatcher is instrumented so every
@@ -1845,7 +1863,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.transport == "http":
         _transport.run_http(server, args.bind)
         return
-    server.run()
+    _transports.run(server, args.transport, args.host, args.port)
 
 
 if __name__ == "__main__":  # pragma: no cover

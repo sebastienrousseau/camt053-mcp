@@ -7,8 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--transport streamable-http` and `--transport sse`, with `--host` and
+  `--port`. Streamable HTTP serves both current protocol revisions
+  (2026-07-28 stateless with `server/discover`, and 2025-11-25 with the
+  `initialize` handshake) on one endpoint and streams responses as
+  server-sent events; `sse` serves the older HTTP+SSE transport. stdio
+  stays the default and is unchanged, and so is the authenticated
+  `--transport http` with `--bind`. `--version` prints the version.
+  ADR 0001 records the decision.
+- Governance parity with the suite: `ARCHITECTURE.md`, `RELEASING.md`,
+  `CITATION.cff`, `DCO.txt` with a Developer Certificate of Origin check
+  on every pull request, and `docs/adr/`.
+
 ### Fixed
 
+- `classify_entry` sent a sampling request to any client and waited for
+  an answer that a client without the sampling capability never gives,
+  so the call hung until the caller's timeout. The tool now asks the
+  session whether the client declared `sampling` at `initialize` and
+  returns the documented `{"error": ...}` envelope at once when it did
+  not. Found by scout's execution check over streamable HTTP.
 - The Glama and MCP-registry manifests (`glama.json`, `server.json`) named a
   release several versions old, so the directory listings advertised a stale
   install; both are stamped to the shipped version and a CI job now fails

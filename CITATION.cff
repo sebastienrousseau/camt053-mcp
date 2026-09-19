@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+cff-version: 1.2.0
+message: "If you use camt053-mcp in research or production write-ups, please cite it as below."
+type: software
+title: "camt053-mcp: Model Context Protocol server for ISO 20022 bank statements"
+abstract: >-
+  A Model Context Protocol server exposing the camt053 library to AI agents:
+  twenty-four tools for parsing, validating, filtering and reversing ISO 20022
+  camt.053 and camt.052 bank statements, migrating MT940 and MT942, checking
+  CBPR+ readiness, citing payments rulebooks and exporting accounting journals.
+authors:
+  - family-names: Rousseau
+    given-names: Sebastien
+    email: sebastian.rousseau@gmail.com
+version: "0.0.20"
+date-released: "2026-08-29"
+license: "Apache-2.0 OR MIT"
+repository-code: "https://github.com/sebastienrousseau/camt053-mcp"
+url: "https://sebastienrousseau.github.io/camt053/"
+keywords:
+  - ISO 20022
+  - camt.053
+  - camt.052
+  - bank statements
+  - Model Context Protocol
+  - MCP
+  - AI agents

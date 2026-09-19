@@ -36,7 +36,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from mcp.types import SamplingMessage, TextContent
+from mcp.types import (
+    ClientCapabilities,
+    SamplingCapability,
+    SamplingMessage,
+    TextContent,
+)
 
 #: The default category list the prompt asks the model to choose from.
 #: Mirrors common bank-statement reconciliation buckets; operators
@@ -75,6 +80,25 @@ def _classification_prompt(
     )
 
 
+def _client_supports_sampling(ctx: Any) -> bool:
+    """Report whether the connected client declared the sampling capability.
+
+    A sampling request to a client that never advertised ``sampling`` at
+    ``initialize`` is not answered: the call hangs until the caller's
+    timeout. Asking the session first turns that hang into an immediate
+    ``{"error": ...}`` envelope. A session without the check (a bare
+    duck-typed context) is assumed capable, so the request is still made
+    and any failure is reported the usual way.
+    """
+    check = getattr(ctx.session, "check_client_capability", None)
+    if check is None:
+        return True
+    try:
+        return bool(check(ClientCapabilities(sampling=SamplingCapability())))
+    except Exception:  # noqa: BLE001 - an unusable session cannot sample
+        return False
+
+
 async def classify_entry(
     ctx: Any,
     entry: dict[str, Any],
@@ -98,6 +122,14 @@ async def classify_entry(
         model returns non-JSON, or a network error fires.
     """
     cats = list(categories) if categories else list(DEFAULT_CATEGORIES)
+    if not _client_supports_sampling(ctx):
+        return {
+            "error": (
+                "MCP Sampling is not available: the client did not declare "
+                "the sampling capability at initialize. Fall back to a "
+                "rules-only classifier."
+            )
+        }
     prompt = _classification_prompt(entry, cats)
 
     try:

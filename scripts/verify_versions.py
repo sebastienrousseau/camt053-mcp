@@ -14,6 +14,7 @@ in the suite. Standard library only, so the workflow needs no install.
 
 Usage: python3 scripts/verify_versions.py
 """
+
 from __future__ import annotations
 
 import json
@@ -34,9 +35,15 @@ def _pyproject_version() -> str:
 
 def _package_version() -> str | None:
     for init in ROOT.glob("*/__init__.py"):
-        if init.parent.name.startswith((".", "_", "tests", "docs", "examples")):
+        if init.parent.name.startswith(
+            (".", "_", "tests", "docs", "examples")
+        ):
             continue
-        match = re.search(r'^__version__\s*=\s*"([^"]+)"', init.read_text(encoding="utf-8"), re.MULTILINE)
+        match = re.search(
+            r'^__version__\s*=\s*"([^"]+)"',
+            init.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
         if match:
             return match.group(1)
     return None
@@ -46,12 +53,20 @@ def _changelog_versions() -> set[str]:
     path = ROOT / "CHANGELOG.md"
     if not path.exists():
         return set()
-    return set(re.findall(r"^## \[(\d+\.\d+\.\d+)\]", path.read_text(encoding="utf-8"), re.MULTILINE))
+    return set(
+        re.findall(
+            r"^## \[(\d+\.\d+\.\d+)\]",
+            path.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+    )
 
 
 def _json(name: str) -> dict | None:
     path = ROOT / name
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    return (
+        json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    )
 
 
 def main() -> int:
@@ -71,14 +86,20 @@ def main() -> int:
     if glama is not None:
         docker = str((glama.get("installation") or {}).get("docker", ""))
         tag = docker.rsplit(":", 1)[-1] if ":" in docker else expected
-        print(f"  glama.json             = {glama.get('version')} (docker tag {tag})")
+        print(
+            f"  glama.json             = {glama.get('version')} (docker tag {tag})"
+        )
         if glama.get("version") != expected or tag != expected:
             problems.append("glama.json version or Docker tag differs")
     server = _json("server.json")
     if server is not None:
         pkg_versions = [p.get("version") for p in server.get("packages", [])]
-        print(f"  server.json            = {server.get('version')} (packages {pkg_versions})")
-        if server.get("version") != expected or any(v != expected for v in pkg_versions):
+        print(
+            f"  server.json            = {server.get('version')} (packages {pkg_versions})"
+        )
+        if server.get("version") != expected or any(
+            v != expected for v in pkg_versions
+        ):
             problems.append("server.json version differs")
     for problem in problems:
         print(f"ERROR: {problem}")

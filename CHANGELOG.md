@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The Glama and MCP-registry manifests (`glama.json`, `server.json`) named a
+  release several versions old, so the directory listings advertised a stale
+  install; both are stamped to the shipped version and a CI job now fails
+  when they, the package version and the changelog disagree.
+
 ## [0.0.20] - 2026-08-29
 
 Documents `search_rulebook_vector`, which was registered and absent from

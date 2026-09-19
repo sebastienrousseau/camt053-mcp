@@ -370,6 +370,49 @@ def test_cli_rejects_unknown_transport():
         server.main(["--transport=carrier-pigeon"])
 
 
+@pytest.mark.parametrize("name", ["streamable-http", "sse"])
+def test_cli_suite_transports_dispatch_to_transports_run(monkeypatch, name):
+    """`--transport=streamable-http|sse` hands off to _transports.run."""
+    calls = {}
+    monkeypatch.setattr(
+        server._transports,
+        "run",
+        lambda mcp_server, t, host, port: calls.update(
+            server=mcp_server, transport=t, host=host, port=port
+        ),
+    )
+    server.main([f"--transport={name}", "--host=0.0.0.0", "--port=9"])
+    assert calls == {
+        "server": server.server,
+        "transport": name,
+        "host": "0.0.0.0",
+        "port": 9,
+    }
+
+
+def test_cli_suite_transports_default_host_and_port(monkeypatch):
+    """Without --host/--port the suite defaults (loopback, 8000) apply."""
+    calls = {}
+    monkeypatch.setattr(
+        server._transports,
+        "run",
+        lambda mcp_server, t, host, port: calls.update(host=host, port=port),
+    )
+    server.main(["--transport=sse"])
+    assert calls == {
+        "host": server._transports.DEFAULT_HOST,
+        "port": server._transports.DEFAULT_PORT,
+    }
+
+
+def test_cli_version_flag(capsys):
+    """`--version` prints the package version and exits 0."""
+    with pytest.raises(SystemExit) as info:
+        server.main(["--version"])
+    assert info.value.code == 0
+    assert f"camt053-mcp {server.__version__}" in capsys.readouterr().out
+
+
 # ─── --otel-endpoint tracing wiring ──────────────────────────────────────────
 
 

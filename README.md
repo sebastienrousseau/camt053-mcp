@@ -23,8 +23,9 @@ validated reversing-entry XML, all from your favourite MCP client.
 
 > **Latest release: v0.0.20** — OAuth 2.1 resource-server auth (RFC 9728)
 > on the HTTP transport, Prometheus metrics, a tamper-evident audit chain,
-> and real-HTTP load benchmarks; 24 MCP tools over stdio or authenticated
-> streamable HTTP, all backed by the shared `camt053.services` layer,
+> and real-HTTP load benchmarks; 24 MCP tools over stdio, streamable HTTP,
+> SSE or authenticated streamable HTTP, all backed by the shared
+> `camt053.services` layer,
 > for Python 3.10+.
 > [See what's new →][release-0014]
 
@@ -34,6 +35,7 @@ validated reversing-entry XML, all from your favourite MCP client.
 - [The ISO 20022 MCP Suite](#the-iso-20022-mcp-suite)
 - [Install](#install)
 - [Quick Start](#quick-start)
+- [Transports](#transports) — stdio, streamable HTTP (2026-07-28 and 2025-11-25), SSE and authenticated HTTP from one command line
 - [Tools](#tools)
 - [Prompts](#prompts)
 - [Resources](#resources)
@@ -106,7 +108,8 @@ Python environment: start with one, add the rest as your workflow grows.
 | [`iso20022-evidence-pack-mcp`](https://github.com/sebastienrousseau/iso20022-evidence-pack-mcp) | Compiles readiness findings, remediation diffs and simulated responses into a sealed, Ed25519-signable audit evidence pack | 6 MCP tools | `pip install iso20022-evidence-pack-mcp` | You need tamper-evident audit / certification artifacts |
 
 In one line each: **`camt053-mcp`** is the bank-statement flagship
-(deepest camt.05x surface, stdio + authenticated streamable HTTP);
+(deepest camt.05x surface, stdio, streamable HTTP, SSE and authenticated
+streamable HTTP);
 **`iso20022-mcp`** is the generic message toolkit (a handful of verbs
 over the whole catalogue); **`reconcile-mcp`** is the reconciliation
 workflow (did the money we expected actually arrive?);
@@ -179,6 +182,34 @@ CAMT053_MCP_TOKEN=<secret> camt053-mcp --transport=http --bind=0.0.0.0:8080
 
 See [Multi-tenant HTTP deployment](docs/quickstart.md#6-multi-tenant-http-deployment)
 and the [deployment cookbook](docs/deployment-cookbook.md).
+
+## Transports
+
+One command line, four transports:
+
+| Command | Transport | Endpoint | Protocol revisions |
+| :--- | :--- | :--- | :--- |
+| `camt053-mcp` | stdio | the client spawns the process | 2026-07-28, 2025-11-25 |
+| `camt053-mcp --transport streamable-http` | Streamable HTTP | `http://127.0.0.1:8000/mcp` | 2026-07-28 (stateless, `server/discover`) and 2025-11-25 (`initialize`, `Mcp-Session-Id`) on the same endpoint; responses stream as server-sent events, `GET` opens the server-to-client stream |
+| `camt053-mcp --transport sse` | HTTP+SSE (2024-11-05) | `http://127.0.0.1:8000/sse` and `/messages/` | for clients that still expect the older transport |
+| `camt053-mcp --transport http` | Authenticated streamable HTTP (see [`transport.py`](camt053_mcp/transport.py)) | `http://127.0.0.1:8080/mcp` (`--bind`) | bearer token or OAuth 2.1, `Camt053-Account` tenant scoping, audit chain |
+
+`--host` and `--port` change the bind address of `streamable-http` and
+`sse` (defaults `127.0.0.1` and `8000`). Those two carry no
+authentication of their own: bind loopback, or put the server behind a
+gateway you trust before binding a routable address; `--transport http`
+is the authenticated option. Every release is verified over streamable
+HTTP with [scout](https://github.com/sebastienrousseau/scout) in both
+protocol eras and over SSE with the MCP SDK client; see
+[ADR 0001](docs/adr/0001-three-transports-one-command-line.md).
+
+```json
+{
+  "mcpServers": {
+    "camt053": { "url": "http://127.0.0.1:8000/mcp" }
+  }
+}
+```
 
 ## Tools
 

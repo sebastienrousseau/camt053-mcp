@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--transport streamable-http` and `--transport sse`, with `--host` and
+  `--port`. Streamable HTTP serves both current protocol revisions
+  (2026-07-28 stateless with `server/discover`, and 2025-11-25 with the
+  `initialize` handshake) on one endpoint and streams responses as
+  server-sent events; `sse` serves the older HTTP+SSE transport. stdio
+  stays the default and is unchanged, and so is the authenticated
+  `--transport http` with `--bind`. `--version` prints the version.
+  ADR 0001 records the decision.
+
 ### Fixed
 
 - The Glama and MCP-registry manifests (`glama.json`, `server.json`) named a

@@ -36,3 +36,19 @@ jobs:
 
       - name: List prompts via MCP Inspector CLI
         run: npx -y @modelcontextprotocol/inspector --cli camt053-mcp --method prompts/list
+
+      - name: Serve streamable HTTP and SSE in the background
+        run: |
+          camt053-mcp --transport streamable-http --port 8000 &
+          camt053-mcp --transport sse --port 8001 &
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null -X POST http://127.0.0.1:8000/mcp \
+              -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{}' && break
+            sleep 1
+          done
+
+      - name: List tools over streamable HTTP via MCP Inspector CLI
+        run: npx -y @modelcontextprotocol/inspector --cli http://127.0.0.1:8000/mcp --transport http --method tools/list
+
+      - name: List tools over SSE via MCP Inspector CLI
+        run: npx -y @modelcontextprotocol/inspector --cli http://127.0.0.1:8001/sse --transport sse --method tools/list

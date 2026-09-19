@@ -93,6 +93,13 @@ git config --global user.signingkey ~/.ssh/id_ed25519
 git config --global commit.gpgsign true
 ```
 
+### Developer Certificate of Origin
+
+Every commit must also carry a `Signed-off-by:` trailer, which asserts
+you have the right to submit the work under this project's licence
+(the text is in [`DCO.txt`](DCO.txt)). Add one with `git commit -s`;
+the `DCO` workflow fails a pull request that is missing it.
+
 ### Commit Message Format
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):

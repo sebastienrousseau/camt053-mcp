@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stays the default and is unchanged, and so is the authenticated
   `--transport http` with `--bind`. `--version` prints the version.
   ADR 0001 records the decision.
+- Governance parity with the suite: `ARCHITECTURE.md`, `RELEASING.md`,
+  `CITATION.cff`, `DCO.txt` with a Developer Certificate of Origin check
+  on every pull request, and `docs/adr/`.
 
 ### Fixed
 

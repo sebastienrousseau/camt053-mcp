@@ -15,13 +15,17 @@
 
 <a href="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp"><img src="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp/badges/score.svg" alt="Glama MCP server score" /></a>
 
+<p align="center">
+  <img src=".github/demo.gif" alt="camt053-mcp Demo" width="100%" />
+</p>
+
 **A [Model Context Protocol][mcp] server that exposes the [`camt053`][core]
 ISO 20022 Bank Statement library as tools for AI agents and assistants** —
 discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.20** — OAuth 2.1 resource-server auth (RFC 9728)
+> **Latest release: v0.0.21** — Multi-framework agent adapters (LangChain, CrewAI, LlamaIndex), OAuth 2.1 resource-server auth (RFC 9728)
 > on the HTTP transport, Prometheus metrics, a tamper-evident audit chain,
 > and real-HTTP load benchmarks; 24 MCP tools over stdio, streamable HTTP,
 > SSE or authenticated streamable HTTP, all backed by the shared
@@ -536,7 +540,7 @@ Part of the **ISO 20022 MCP Suite** — open-source, Apache-2.0 licensed MCP ser
 
 ## License
 
-Licensed under the [Apache License, Version 2.0][01]. Any contribution submitted
+Dual-licensed under the [Apache License, Version 2.0][01] or the [MIT License][mit-license]. Any contribution submitted
 for inclusion shall be licensed as above, without additional terms.
 
 ## Contributing
@@ -550,6 +554,7 @@ Built on the [`camt053`][core] ISO 20022 Bank Statement library and the
 [Model Context Protocol][mcp] Python SDK.
 
 [01]: https://opensource.org/license/apache-2-0/
+[mit-license]: https://opensource.org/license/mit/
 [04]: https://github.com/sebastienrousseau/camt053-mcp/blob/main/CONTRIBUTING.md
 [05]: https://github.com/sebastienrousseau/camt053-mcp/graphs/contributors
 [07]: https://pypi.org/project/camt053-mcp/

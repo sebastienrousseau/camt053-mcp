@@ -59,9 +59,9 @@ def _resolve() -> tuple[Any, Any, int]:
         # the parameter look like ordinary input, and building the tool
         # schema then dies with "Cannot generate a JsonSchema for
         # core_schema.IsInstanceSchema".
-        from mcp.server.mcpserver.context import Context
+        from mcp.server.mcpserver.context import Context  # pragma: no cover
 
-        return server_cls, Context, 2
+        return server_cls, Context, 2  # pragma: no cover
 
     # mcp 1.x. Imported dynamically on purpose: a static
     # ``from mcp.server import fastmcp`` cannot type-check while 2.x is
@@ -103,7 +103,7 @@ UserMessage, AssistantMessage = _resolve_prompts()
 def build_server(name: str, version: str) -> Any:
     """Construct the MCP server, reporting ``version`` in ``serverInfo``."""
     if MCP_MAJOR >= 2:
-        return MCPServer(name, version=version)
+        return MCPServer(name, version=version)  # pragma: no cover
 
     server = MCPServer(name)  # pragma: no cover  (FastMCP on 1.x)
     server._mcp_server.version = version  # pragma: no cover
@@ -114,7 +114,7 @@ def server_version(server: Any) -> str:
     """Read back the version a server reports, across both majors."""
     version = getattr(server, "version", None)
     if version:
-        return str(version)
+        return str(version)  # pragma: no cover
     return str(server._mcp_server.version)  # pragma: no cover
 
 

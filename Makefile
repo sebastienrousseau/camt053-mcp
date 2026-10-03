@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format type-check security fuzz pip-compile clean examples check
+.PHONY: help install dev test lint format type-check security fuzz pip-compile clean examples demo check
 
 PYTHON ?= python3
 POETRY ?= poetry
@@ -52,5 +52,8 @@ clean: ## Remove build artifacts and caches
 
 examples: ## Verify example scripts run
 	$(POETRY) run python examples/mcp_tools.py
+
+demo: ## Generate terminal demo GIF using VHS
+	vhs .github/demo.tape
 
 check: lint type-check test examples ## Run all checks

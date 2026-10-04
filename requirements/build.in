@@ -1,3 +1,7 @@
 # Build/publish tooling for the release "publish" + "sbom" jobs.
 poetry
 twine
+# Security floors for transitive dependencies
+dulwich>=1.2.9
+virtualenv>=21.7.13
+urllib3>=2.8.0

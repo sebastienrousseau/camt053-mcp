@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
+
 # camt053-mcp: An MCP Server for ISO 20022 Bank Statements
 
 <p align="center">

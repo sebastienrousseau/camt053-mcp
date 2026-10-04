@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.21] - 2026-10-03
+
 ### Added
 
+- Multi-framework agent adapters (`camt053_mcp.adapters`) supporting LangChain, CrewAI, and LlamaIndex.
+- Terminal demo animation `.github/demo.gif` generated via VHS (`.github/demo.tape`) with `make demo` target.
+- Full dual licensing under Apache-2.0 OR MIT (`LICENSES/Apache-2.0.txt`, `LICENSES/MIT.txt`).
+- Standardized `AGENTS.md` developer and agent workflow guidelines.
 - `--transport streamable-http` and `--transport sse`, with `--host` and
   `--port`. Streamable HTTP serves both current protocol revisions
   (2026-07-28 stateless with `server/discover`, and 2025-11-25 with the

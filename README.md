@@ -27,7 +27,7 @@ discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.21** — Multi-framework agent adapters (LangChain, CrewAI, LlamaIndex), OAuth 2.1 resource-server auth (RFC 9728)
+> **Latest release: v0.0.22**: Multi-framework agent adapters (LangChain, CrewAI, LlamaIndex), OAuth 2.1 resource-server auth (RFC 9728)
 > on the HTTP transport, Prometheus metrics, a tamper-evident audit chain,
 > and real-HTTP load benchmarks; 24 MCP tools over stdio, streamable HTTP,
 > SSE or authenticated streamable HTTP, all backed by the shared

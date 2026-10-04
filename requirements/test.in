@@ -8,7 +8,7 @@ pytest>=9.0.3,<10.0.0
 pytest-asyncio>=0.24,<2.0
 pytest-cov>=6.0.0,<8.0.0
 interrogate>=1.7
-pyjwt[crypto]>=2.10,<3
+pyjwt[crypto]>=2.15.1,<3
 httpx>=0.27,<1
 prometheus-client>=0.20,<2
 # Optional [otel] tracing extra: required in the test environment so the
@@ -21,3 +21,4 @@ opentelemetry-exporter-otlp-proto-http>=1.20,<2
 # sqlite-vec index over the curated rulebook clauses. Not part of the base
 # install.
 sqlite-vec>=0.1.6,<0.2
+urllib3>=2.8.0

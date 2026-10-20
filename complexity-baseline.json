@@ -33,9 +33,5 @@
   },
   "camt053_mcp/transport.py::run_http": {
     "lines": 69
-  },
-  "scripts/verify_versions.py::main": {
-    "cognitive": 19,
-    "cyclomatic": 17
   }
 }

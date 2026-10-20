@@ -6,7 +6,8 @@ Single source of truth: ``version`` in ``pyproject.toml``. The same string
 must appear in the package's ``__version__`` (when the package defines
 one), as a ``## [X.Y.Z]`` heading in ``CHANGELOG.md``, in ``glama.json``
 (``version`` and the Docker tag of ``installation.docker`` when present),
-and in ``server.json`` (``version`` and every ``packages[].version``).
+in ``server.json`` (``version`` and every ``packages[].version``), and
+in ``CITATION.cff`` (``version``).
 
 The Glama directory and the MCP registry read those two manifests; before
 this check they sat several releases behind the package on every server
@@ -21,6 +22,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,11 +64,80 @@ def _changelog_versions() -> set[str]:
     )
 
 
-def _json(name: str) -> dict | None:
+def _json(name: str) -> dict[str, Any] | None:
     path = ROOT / name
     return (
         json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
     )
+
+
+Check = tuple[list[str], list[str]]
+
+
+def _check_package(expected: str) -> Check:
+    pkg = _package_version()
+    if pkg is None:
+        return [], []
+    line = f"  __version__            = {pkg}"
+    ok = pkg == expected
+    return [line], [] if ok else ["__version__ differs from pyproject.toml"]
+
+
+def _check_changelog(expected: str) -> Check:
+    changelog = _changelog_versions()
+    if changelog and expected not in changelog:
+        return [], [f"CHANGELOG.md has no [{expected}] heading"]
+    return [], []
+
+
+def _check_glama(expected: str) -> Check:
+    glama = _json("glama.json")
+    if glama is None:
+        return [], []
+    docker = str((glama.get("installation") or {}).get("docker", ""))
+    tag = docker.rsplit(":", 1)[-1] if ":" in docker else expected
+    line = (
+        f"  glama.json             = {glama.get('version')} (docker tag {tag})"
+    )
+    ok = glama.get("version") == expected and tag == expected
+    return [line], [] if ok else ["glama.json version or Docker tag differs"]
+
+
+def _check_server(expected: str) -> Check:
+    server = _json("server.json")
+    if server is None:
+        return [], []
+    versions = [p.get("version") for p in server.get("packages", [])]
+    line = f"  server.json            = {server.get('version')} (packages {versions})"
+    ok = server.get("version") == expected and all(
+        v == expected for v in versions
+    )
+    return [line], [] if ok else ["server.json version differs"]
+
+
+def _check_citation(expected: str) -> Check:
+    path = ROOT / "CITATION.cff"
+    if not path.exists():
+        return [], []
+    match = re.search(
+        r'^version:\s*"?([^"\s]+)"?\s*$',
+        path.read_text(encoding="utf-8"),
+        re.MULTILINE,
+    )
+    found = match.group(1) if match else None
+    line = f"  CITATION.cff           = {found}"
+    return [line], (
+        [] if found == expected else ["CITATION.cff version differs"]
+    )
+
+
+CHECKS = (
+    _check_package,
+    _check_changelog,
+    _check_glama,
+    _check_server,
+    _check_citation,
+)
 
 
 def main() -> int:
@@ -74,33 +145,11 @@ def main() -> int:
     expected = _pyproject_version()
     problems: list[str] = []
     print(f"  pyproject.toml version = {expected}")
-    pkg = _package_version()
-    if pkg is not None:
-        print(f"  __version__            = {pkg}")
-        if pkg != expected:
-            problems.append("__version__ differs from pyproject.toml")
-    changelog = _changelog_versions()
-    if changelog and expected not in changelog:
-        problems.append(f"CHANGELOG.md has no [{expected}] heading")
-    glama = _json("glama.json")
-    if glama is not None:
-        docker = str((glama.get("installation") or {}).get("docker", ""))
-        tag = docker.rsplit(":", 1)[-1] if ":" in docker else expected
-        print(
-            f"  glama.json             = {glama.get('version')} (docker tag {tag})"
-        )
-        if glama.get("version") != expected or tag != expected:
-            problems.append("glama.json version or Docker tag differs")
-    server = _json("server.json")
-    if server is not None:
-        pkg_versions = [p.get("version") for p in server.get("packages", [])]
-        print(
-            f"  server.json            = {server.get('version')} (packages {pkg_versions})"
-        )
-        if server.get("version") != expected or any(
-            v != expected for v in pkg_versions
-        ):
-            problems.append("server.json version differs")
+    for check in CHECKS:
+        lines, found = check(expected)
+        for line in lines:
+            print(line)
+        problems.extend(found)
     for problem in problems:
         print(f"ERROR: {problem}")
     if problems:

@@ -429,7 +429,9 @@ def test_bad_signature_is_rejected(verifier, other_rsa_key):
 
 def test_algorithm_confusion_is_rejected(verifier):
     """An HS256 token cannot sneak past the JWKS RS256 key."""
-    token = _make_token("shared-secret", algorithm="HS256")
+    # 32 bytes, the RFC 7518 minimum for HS256, so PyJWT signs it without
+    # an InsecureKeyLengthWarning; the rejection under test is unchanged.
+    token = _make_token("x" * 32, algorithm="HS256")
     assert _reason(verifier, token) == "invalid_token"
 
 

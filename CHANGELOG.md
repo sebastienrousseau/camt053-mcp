@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.23] - 2026-10-20
+
+### Security
+
+- **GHSA-84m7-p3x7-pcfv (CVE-2026-59951)**: the lock resolved `mcp` 2.0.0,
+  which is affected. The `mcp` constraint is now
+  `>=1.30.0,!=2.0.*,!=2.1.*,<3`, so no affected 1.x or 2.x release can
+  resolve, and the lock moves to `mcp` 2.3.0. Both SDK majors stay
+  supported; the suite passes on 2.3.0 and on 1.30.0.
+- Every GitHub Action is pinned by full commit SHA, and the CI lockfile
+  job installs Poetry from the hash-pinned `requirements/build.txt`
+  instead of an unpinned `pip install poetry`.
+
+### Changed
+
+- Dependencies: `camt053`, `camt053-loader-mt940` and
+  `camt053-loader-mt942` 0.0.20, `black` 26.10.1, `ruff` 0.17.1,
+  `mypy` 2.4.0, `tomli` 2.5.0, `packaging` 26.3, `virtualenv` 21.14.11;
+  actions `codeql-action` 4.39.0, `setup-node` 7.1.0, `sbom-action`
+  0.24.3, `upload-artifact` 7.0.2, `scorecard-action` 2.5.0; the
+  ClusterFuzzLite base image to the current digest.
+- The README uses the canonical badge row, and `docs/POLICIES.md` states
+  the Python toolchain floor the minimum-Python badge links to.
+- A **Complexity ceilings** CI job holds every function to cyclomatic 10,
+  cognitive 15, Halstead difficulty 30 and 60 lines (500 per file)
+  against `complexity-baseline.json`, which can only shrink.
+
+### Fixed
+
+- The scheduled **Suite Consistency** job failed every night: it compared
+  this tree with the `camt053` core's PyPI version. It now checks that
+  the tree matches `camt053-mcp`'s own release, that the server never
+  trails the core, and that the declared `camt053` floor is published.
+- `scripts/verify_versions.py` never read `CITATION.cff`, which shipped
+  at 0.0.21 in v0.0.22. It is now checked.
+- The test suite printed an `InsecureKeyLengthWarning` and, on Python
+  3.14, a deprecation warning per example; it runs warning-free.
+
 ## [0.0.22] - 2026-10-04
 
 ### Documentation
@@ -591,5 +629,6 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Python 3.10+ support; depends on `camt053` (>=0.0.1) and `mcp` (>=1.2)
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
+[0.0.23]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.23
 [0.0.22]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.22
 [0.0.21]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.21

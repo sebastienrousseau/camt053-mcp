@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.22"
+version = "0.0.23"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0 OR MIT"
@@ -19,10 +19,11 @@ python = ">=3.10,<4.0"
 camt053 = ">=0.0.17,<1"
 camt053-loader-mt940 = ">=0.0.9"
 camt053-loader-mt942 = ">=0.0.1"
-# Capped <2: mcp 2.0 removed mcp.server.fastmcp (the FastMCP import this
-# server uses), which breaks a plain `pip install .` (e.g. the MCP Inspector
-# CI job). Hold at 1.x until the server is ported to the mcp 2.0 API.
-mcp = ">=1.2,<3"
+# camt053_mcp._mcp_compat serves both the mcp 1.x FastMCP API and the
+# 2.x MCPServer API. GHSA-84m7-p3x7-pcfv affects mcp >=1.8.0,<1.30.0 and
+# >=2.0.0,<2.2.0, so both affected ranges are excluded: the floor is the
+# patched 1.30.0 and the vulnerable 2.0/2.1 lines can never resolve.
+mcp = ">=1.30.0,!=2.0.*,!=2.1.*,<3"
 # OAuth 2.1 resource-server JWT validation (camt053_mcp.oauth): PyJWT
 # is already in the tree via the MCP SDK, but we import it directly so
 # it is pinned explicitly; [crypto] guarantees RSA/EC JWKS support.
@@ -62,7 +63,7 @@ pytest = ">=9.0.3,<10.0.0"
 pytest-asyncio = ">=0.24,<2.0"
 pytest-cov = ">=6.0.0,<8.0.0"
 black = "^26.3.1"
-ruff = ">=0.1,<0.17"
+ruff = ">=0.1,<0.18"
 mypy = ">=1.11,<3.0"
 interrogate = "^1.7"
 bandit = "^1.7.0"

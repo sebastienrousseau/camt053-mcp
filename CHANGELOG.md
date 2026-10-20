@@ -34,10 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The scheduled **Suite Consistency** job failed every night: it compared
-  this tree with the `camt053` core's PyPI version. It now checks that
-  the tree matches `camt053-mcp`'s own release, that the server never
-  trails the core, and that the declared `camt053` floor is published.
+- The scheduled **Suite Consistency** job compared this tree with the
+  `camt053` core's PyPI version. It now compares the tree with
+  `camt053-mcp`'s own release, and still requires every member of the
+  suite to publish the core's version: the suite releases together, core
+  first, and a server ahead of the core fails like one left behind.
 - `scripts/verify_versions.py` never read `CITATION.cff`, which shipped
   at 0.0.21 in v0.0.22. It is now checked.
 - The test suite printed an `InsecureKeyLengthWarning` and, on Python

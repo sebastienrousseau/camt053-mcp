@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""Check this package against what PyPI says about it and its suite.
+"""Check the published camt053 suite agrees with its own policy.
 
-Nothing breaks when a version slips: a package left a release behind
-still installs, still imports, still passes its own tests. The only way
-to notice is to go and look, so a scheduled job runs this and fails.
+The suite ships one version number across every package. That is easy to
+state and easy to let slip, because nothing breaks when it does: a member
+left a release behind still installs, still imports, still passes its own
+tests. It just quietly means something different from what it says.
 
-What it holds ``camt053-mcp`` to:
+Two failures this catches, both of which had already happened here:
 
-* **The tree is what was released.** A version bumped in the tree and
-  never tagged looks exactly like a finished release and nothing else
-  notices. Three repositories in the wider suite have done this, each
-  time stranding a ``cryptography`` advisory floor that reached nobody.
-* **The server never trails the core.** ``camt053-mcp`` may ship ahead of
-  ``camt053`` -- a security floor on the MCP SDK cannot wait for five
-  other repositories to release -- but a server older than the core it
-  wraps is a release that was skipped.
-* **The declared ``camt053`` floor exists.** A floor above the newest
-  published core makes the package uninstallable.
+* **A member left behind.** The camt053 packages disagreed:
+  0.0.18, 0.0.18, 0.0.19, 0.0.18, 0.0.16 and 0.0.16
+  -- different numbers for one suite.
 
-How far the other members sit from the core is printed as a note and
-does not fail this job: that is the core repository's policy to enforce,
-in its own Suite Consistency workflow.
+* **A version bumped in the tree and never released.** Three repositories
+  in the wider suite have done this, each time stranding a `cryptography`
+  advisory floor that reached nobody. Nothing fails when it happens; only
+  PyPI disagrees, and only if somebody looks. This looks.
+
+Exits non-zero when the suite disagrees with itself, so a schedule turns
+into a notification rather than a report nobody opens.
 
 Usage:
     python3 scripts/check_suite_consistency.py
@@ -33,7 +31,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import urllib.error
 import urllib.request
@@ -47,25 +44,21 @@ else:  # pragma: no cover - exercised only on the 3.10 floor
 
 ROOT = Path(__file__).resolve().parent.parent
 
-#: The core library every member wraps.
-CORE = "camt053"
-
-#: This repository's distribution.
-SELF = "camt053-mcp"
-
 #: Every published member of the camt053 suite. The core is first.
 MEMBERS = (
-    CORE,
+    "camt053",
     "camt053-lsp",
-    SELF,
+    "camt053-mcp",
     "camt053-loader-mt940",
     "camt053-loader-mt942",
     "camt053-writer-xlsx",
 )
 
-TIMEOUT = 30
+#: The member this checkout builds. The script was copied from the core,
+#: where this and ``MEMBERS[0]`` are the same; here they are not.
+THIS = "camt053-mcp"
 
-Published = dict[str, "str | None"]
+TIMEOUT = 30
 
 
 def published_version(distribution: str) -> str | None:
@@ -78,125 +71,68 @@ def published_version(distribution: str) -> str | None:
         return None
 
 
-def _pyproject() -> dict[str, Any]:
-    """This checkout's ``pyproject.toml``."""
-    with (ROOT / "pyproject.toml").open("rb") as handle:
-        data: dict[str, Any] = tomllib.load(handle)
-    return data
-
-
-def tree_version(data: dict[str, Any]) -> str:
+def tree_version() -> str:
     """The version this checkout declares."""
+    with (ROOT / "pyproject.toml").open("rb") as handle:
+        data = tomllib.load(handle)
     poetry = data.get("tool", {}).get("poetry", {})
     return str(poetry.get("version") or data["project"]["version"])
 
 
-def core_floor(data: dict[str, Any]) -> str | None:
-    """The lowest ``camt053`` this checkout accepts, if it declares one."""
-    deps = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
-    spec = deps.get(CORE)
-    if isinstance(spec, dict):
-        spec = spec.get("version")
-    match = re.search(r">=\s*([0-9][0-9.]*)", str(spec or ""))
-    return match.group(1) if match else None
-
-
-def as_tuple(version: str) -> tuple[int, ...]:
-    """``0.0.20`` as ``(0, 0, 20)``; stops at the first non-digit part."""
-    parts: list[int] = []
-    for chunk in version.split("."):
-        if not chunk.isdigit():
-            break
-        parts.append(int(chunk))
-    return tuple(parts)
-
-
-def _unreadable(published: Published) -> list[str]:
-    """One problem per member PyPI did not answer for."""
-    return [
-        f"{name}: could not read PyPI"
-        for name in (CORE, SELF)
-        if published.get(name) is None
-    ]
-
-
-def _against_core(own: str, core: str, floor: str | None) -> list[str]:
-    """Problems with where this package sits relative to the core."""
+def check() -> tuple[list[str], dict[str, Any]]:
+    """Return (problems, report)."""
     problems: list[str] = []
-    if as_tuple(own) < as_tuple(core):
+    tree = tree_version()
+    published = {name: published_version(name) for name in MEMBERS}
+
+    core_published = published[MEMBERS[0]]
+    this_published = published[THIS]
+
+    # 1. The tree must not disagree with what this repository released. A
+    #    bump that was never tagged looks exactly like this and nothing
+    #    else notices.
+    if this_published and this_published != tree:
         problems.append(
-            f"{SELF}: published {own} trails the core {CORE} {core}. "
-            f"Release it."
+            f"{THIS}: tree is {tree} but PyPI has {this_published}. "
+            f"Either the release was never tagged, or the tree is behind."
         )
-    if floor and as_tuple(floor) > as_tuple(core):
-        problems.append(
-            f"{SELF} requires {CORE}>={floor}, but the newest published "
-            f"{CORE} is {core}. Nobody can install this combination."
-        )
-    return problems
 
+    # 2. Every member ships the core's number.
+    for name, version in published.items():
+        if version is None:
+            problems.append(f"{name}: could not read PyPI")
+        elif core_published and version != core_published:
+            problems.append(
+                f"{name}: published {version}, but the suite is at "
+                f"{core_published}"
+            )
 
-def _notes(core: str, published: Published) -> list[str]:
-    """Members whose published version differs from the core's."""
-    return [
-        f"{name}: published {version}, the core is at {core}"
-        for name, version in published.items()
-        if version and name != CORE and version != core
-    ]
-
-
-def check(
-    tree: str, floor: str | None, published: Published
-) -> tuple[list[str], list[str]]:
-    """Return ``(problems, notes)`` for this tree against ``published``."""
-    problems = _unreadable(published)
-    own, core = published.get(SELF), published.get(CORE)
-    if own and own != tree:
-        problems.append(
-            f"{SELF}: tree is {tree} but PyPI has {own}. Either the "
-            f"release was never tagged, or the tree is behind."
-        )
-    if not (own and core):
-        return problems, []
-    return problems + _against_core(own, core, floor), _notes(core, published)
-
-
-def _print_text(report: dict[str, Any]) -> None:
-    """Render ``report`` for a person reading the job log."""
-    print(f"tree version: {report['tree']}")
-    for name, version in report["published"].items():
-        print(f"  {name:34} {version}")
-    if report["notes"]:
-        print("\nnotes (not failures):")
-        print("\n".join(f"  - {item}" for item in report["notes"]))
-    if report["problems"]:
-        print("\nproblems:")
-        print("\n".join(f"  - {item}" for item in report["problems"]))
-    else:
-        print(f"\n{SELF} agrees with what is published")
-
-
-def main(argv: list[str] | None = None) -> int:
-    """Run the check and report; non-zero when there is a problem."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--json", action="store_true", help="emit JSON")
-    args = parser.parse_args(argv)
-
-    data = _pyproject()
-    tree = tree_version(data)
-    published: Published = {name: published_version(name) for name in MEMBERS}
-    problems, notes = check(tree, core_floor(data), published)
-    report: dict[str, Any] = {
+    return problems, {
         "tree": tree,
         "published": published,
         "problems": problems,
-        "notes": notes,
     }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--json", action="store_true", help="emit JSON")
+    args = parser.parse_args()
+
+    problems, report = check()
     if args.json:
         json.dump(report, sys.stdout, indent=1)
         print()
     else:
-        _print_text(report)
+        print(f"tree version: {report['tree']}")
+        for name, version in report["published"].items():
+            print(f"  {name:34} {version}")
+        if problems:
+            print("\nproblems:")
+            for problem in problems:
+                print(f"  - {problem}")
+        else:
+            print("\nthe suite agrees with itself")
     return 1 if problems else 0
 
 

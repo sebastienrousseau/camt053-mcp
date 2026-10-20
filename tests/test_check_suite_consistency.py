@@ -1,98 +1,89 @@
 # SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""scripts/check_suite_consistency.py, without touching the network."""
+"""The scheduled suite check holds the camt053 suite to one version.
+
+Every member ships the core's number, in the same release, so a server
+published ahead of the core fails exactly like one left behind. The tree
+is compared with ``camt053-mcp``'s own release, not the core's. PyPI is
+never reached; the published versions are substituted.
+"""
 
 from __future__ import annotations
 
 import importlib.util
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-_SPEC = importlib.util.spec_from_file_location(
-    "check_suite_consistency", ROOT / "scripts" / "check_suite_consistency.py"
+import pytest
+
+SCRIPT = (
+    Path(__file__).resolve().parent.parent
+    / "scripts"
+    / "check_suite_consistency.py"
 )
-assert _SPEC and _SPEC.loader
-suite = importlib.util.module_from_spec(_SPEC)
-sys.modules["check_suite_consistency"] = suite
-_SPEC.loader.exec_module(suite)
+
+MEMBERS = (
+    "camt053",
+    "camt053-lsp",
+    "camt053-mcp",
+    "camt053-loader-mt940",
+    "camt053-loader-mt942",
+    "camt053-writer-xlsx",
+)
 
 
-def _published(own: str | None, core: str | None, others: str = "0.0.20"):
-    versions = dict.fromkeys(suite.MEMBERS, others)
-    versions[suite.SELF] = own
-    versions[suite.CORE] = core
+@pytest.fixture
+def script(monkeypatch):
+    """The script as a module, with PyPI and the tree substituted."""
+    spec = importlib.util.spec_from_file_location("suite_check", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    def use(tree: str, published: dict[str, str | None]):
+        monkeypatch.setattr(module, "tree_version", lambda: tree)
+        monkeypatch.setattr(module, "published_version", published.get)
+        return module.check()[0]
+
+    return use
+
+
+def _suite(version: str, **members: str) -> dict[str, str | None]:
+    versions: dict[str, str | None] = dict.fromkeys(MEMBERS, version)
+    versions.update({k.replace("_", "-"): v for k, v in members.items()})
     return versions
 
 
-def test_server_ahead_of_the_core_is_a_note_not_a_failure() -> None:
-    """The state main was in: 0.0.22 released, the core at 0.0.20.
-
-    The old check read this tree as the core's and failed every night.
-    """
-    problems, notes = suite.check(
-        "0.0.22", "0.0.17", _published("0.0.22", "0.0.20")
-    )
-    assert problems == []
-    assert notes == ["camt053-mcp: published 0.0.22, the core is at 0.0.20"]
+def test_a_suite_on_one_version_is_clean(script):
+    assert script("0.0.23", _suite("0.0.23")) == []
 
 
-def test_a_bump_that_was_never_released_fails() -> None:
-    problems, _ = suite.check(
-        "0.0.23", "0.0.17", _published("0.0.22", "0.0.20")
-    )
+def test_a_server_ahead_of_the_core_fails(script):
+    """The state main was in: camt053-mcp 0.0.22, every other member 0.0.20."""
+    problems = script("0.0.22", _suite("0.0.20", camt053_mcp="0.0.22"))
+    assert problems == [
+        "camt053-mcp: published 0.0.22, but the suite is at 0.0.20"
+    ]
+
+
+def test_a_member_left_behind_fails(script):
+    problems = script("0.0.23", _suite("0.0.23", camt053_lsp="0.0.20"))
+    assert problems == [
+        "camt053-lsp: published 0.0.20, but the suite is at 0.0.23"
+    ]
+
+
+def test_unreleased_bump_names_this_distribution(script):
+    """A bump that never reached PyPI is reported against camt053-mcp."""
+    problems = script("0.0.23", _suite("0.0.22"))
     assert problems == [
         "camt053-mcp: tree is 0.0.23 but PyPI has 0.0.22. Either the "
         "release was never tagged, or the tree is behind."
     ]
 
 
-def test_a_server_behind_the_core_fails() -> None:
-    problems, _ = suite.check(
-        "0.0.19", "0.0.17", _published("0.0.19", "0.0.20")
-    )
-    assert problems == [
-        "camt053-mcp: published 0.0.19 trails the core camt053 0.0.20. "
-        "Release it."
+def test_unreadable_index_is_reported(script):
+    """A member PyPI cannot answer for is a problem, never a pass."""
+    versions = _suite("0.0.23")
+    del versions["camt053-writer-xlsx"]
+    assert script("0.0.23", versions) == [
+        "camt053-writer-xlsx: could not read PyPI"
     ]
-
-
-def test_an_unpublished_core_floor_fails() -> None:
-    problems, _ = suite.check(
-        "0.0.22", "0.0.21", _published("0.0.22", "0.0.20")
-    )
-    assert problems == [
-        "camt053-mcp requires camt053>=0.0.21, but the newest published "
-        "camt053 is 0.0.20. Nobody can install this combination."
-    ]
-
-
-def test_pypi_not_answering_fails() -> None:
-    problems, _ = suite.check("0.0.22", "0.0.17", _published(None, None))
-    assert problems == [
-        "camt053: could not read PyPI",
-        "camt053-mcp: could not read PyPI",
-    ]
-
-
-def test_other_members_drifting_are_notes() -> None:
-    _, notes = suite.check(
-        "0.0.20", None, _published("0.0.20", "0.0.20", others="0.0.19")
-    )
-    assert len(notes) == len(suite.MEMBERS) - 2
-
-
-def test_core_floor_reads_this_pyproject() -> None:
-    data = suite._pyproject()
-    assert suite.core_floor(data) == "0.0.17"
-    assert suite.tree_version(data) == data["tool"]["poetry"]["version"]
-    table = {
-        "tool": {"poetry": {"dependencies": {"camt053": {"version": ">=1.2"}}}}
-    }
-    assert suite.core_floor(table) == "1.2"
-    assert suite.core_floor({}) is None
-
-
-def test_as_tuple_stops_at_a_suffix() -> None:
-    assert suite.as_tuple("0.0.20") == (0, 0, 20)
-    assert suite.as_tuple("0.1.0rc1") == (0, 1)

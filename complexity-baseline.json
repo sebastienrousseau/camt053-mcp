@@ -1,0 +1,41 @@
+{
+  "camt053_mcp/classify.py::classify_entry": {
+    "lines": 67
+  },
+  "camt053_mcp/export_journal.py::_qbo_journal_entry": {
+    "cyclomatic": 12
+  },
+  "camt053_mcp/export_journal.py::_xero_bank_transaction": {
+    "cyclomatic": 13
+  },
+  "camt053_mcp/oauth.py": {
+    "file_lines": 636
+  },
+  "camt053_mcp/oauth.py::JWTVerifier.verify": {
+    "cyclomatic": 11,
+    "lines": 67
+  },
+  "camt053_mcp/observability.py::classify_outcome": {
+    "cognitive": 26,
+    "cyclomatic": 14
+  },
+  "camt053_mcp/server.py": {
+    "file_lines": 1870
+  },
+  "camt053_mcp/server.py::_bank_session_payload": {
+    "lines": 64
+  },
+  "camt053_mcp/server.py::_fee_anomalies": {
+    "cyclomatic": 12
+  },
+  "camt053_mcp/server.py::_parse_args": {
+    "lines": 65
+  },
+  "camt053_mcp/transport.py::run_http": {
+    "lines": 69
+  },
+  "scripts/verify_versions.py::main": {
+    "cognitive": 19,
+    "cyclomatic": 17
+  }
+}

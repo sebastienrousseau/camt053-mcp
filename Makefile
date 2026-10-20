@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format type-check security fuzz pip-compile clean examples demo check
+.PHONY: help install dev test lint format type-check security complexity fuzz pip-compile clean examples demo check
 
 PYTHON ?= python3
 POETRY ?= poetry
@@ -30,6 +30,9 @@ type-check: ## Run mypy type checking
 security: ## Run security scan (bandit)
 	$(POETRY) run bandit -r camt053_mcp/ -c pyproject.toml 2>/dev/null || \
 		$(POETRY) run bandit -r camt053_mcp/ -ll
+
+complexity: ## Check complexity vs complexity-baseline.json (needs requirements/complexity.txt)
+	$(PYTHON) scripts/check_complexity.py
 
 fuzz: ## Run the Atheris fuzz harness locally (set RUNS to override)
 	$(PYTHON) -m pip install atheris

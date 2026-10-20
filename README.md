@@ -6,16 +6,16 @@
   <img src="https://cloudcdn.pro/camt053/v1/logos/camt053.svg" alt="camt053-mcp logo" width="128" />
 </p>
 
-[![PyPI Version][pypi-badge]][07]
-[![Python Versions][python-versions-badge]][07]
-[![License][license-badge]][01]
-[![Tests][tests-badge]][tests-url]
-[![Quality][quality-badge]][quality-url]
-[![OpenSSF Scorecard][scorecard-badge]][scorecard-url]
-[![OpenSSF Best Practices][bestpractices-badge]][bestpractices-url]
-[![Documentation][docs-badge]][docs-url]
-
-<a href="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp"><img src="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp/badges/score.svg" alt="Glama MCP server score" /></a>
+<p align="center">
+  <a href="https://github.com/sebastienrousseau/camt053-mcp/actions"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/camt053-mcp/ci.yml?style=for-the-badge&logo=github" alt="Build" height="28" /></a>
+  <a href="https://pypi.org/project/camt053-mcp/"><img src="https://img.shields.io/pypi/v/camt053-mcp?style=for-the-badge&color=fc8d62&logo=python" alt="Registry" height="28" /></a>
+  <a href="https://sebastienrousseau.github.io/camt053/"><img src="https://img.shields.io/badge/docs-camt053-blue?style=for-the-badge&labelColor=555555&logo=readthedocs" alt="Docs" height="28" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/camt053-mcp"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/camt053-mcp?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" height="28" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg?style=for-the-badge" alt="License: Apache-2.0 OR MIT" height="28" /></a>
+  <a href="https://github.com/sebastienrousseau/camt053-mcp/blob/main/docs/POLICIES.md"><img src="https://img.shields.io/badge/Python-3.10%2B-93450a.svg?style=for-the-badge&logo=python" alt="Python 3.10 or newer" height="28" /></a>
+  <a href="https://www.bestpractices.dev/projects/13374"><img src="https://img.shields.io/cii/level/13374?style=for-the-badge&label=OpenSSF%20Best%20Practices&logo=openssf" alt="OpenSSF Best Practices" height="28" /></a>
+  <a href="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp"><img src="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp/badges/score.svg" alt="Glama MCP server score" height="28" /></a>
+</p>
 
 <p align="center">
   <img src=".github/demo.gif" alt="camt053-mcp Demo" width="100%" />
@@ -559,21 +559,7 @@ Built on the [`camt053`][core] ISO 20022 Bank Statement library and the
 [mit-license]: https://opensource.org/license/mit/
 [04]: https://github.com/sebastienrousseau/camt053-mcp/blob/main/CONTRIBUTING.md
 [05]: https://github.com/sebastienrousseau/camt053-mcp/graphs/contributors
-[07]: https://pypi.org/project/camt053-mcp/
 [core]: https://github.com/sebastienrousseau/camt053
 [lsp]: https://github.com/sebastienrousseau/camt053-lsp
 [mcp]: https://modelcontextprotocol.io
 [release-0014]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.14
-[docs-badge]: https://img.shields.io/badge/Docs-camt053-blue?style=for-the-badge
-[docs-url]: https://sebastienrousseau.github.io/camt053/
-[license-badge]: https://img.shields.io/pypi/l/camt053-mcp?style=for-the-badge
-[pypi-badge]: https://img.shields.io/pypi/v/camt053-mcp?style=for-the-badge
-[python-versions-badge]: https://img.shields.io/pypi/pyversions/camt053-mcp.svg?style=for-the-badge
-[quality-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/camt053-mcp/ci.yml?branch=main&label=Quality&style=for-the-badge
-[quality-url]: https://github.com/sebastienrousseau/camt053-mcp/actions/workflows/ci.yml
-[scorecard-badge]: https://api.scorecard.dev/projects/github.com/sebastienrousseau/camt053-mcp/badge?style=for-the-badge
-[scorecard-url]: https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/camt053-mcp
-[bestpractices-badge]: https://www.bestpractices.dev/projects/13374/badge
-[bestpractices-url]: https://www.bestpractices.dev/projects/13374
-[tests-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/camt053-mcp/ci.yml?branch=main&label=Tests&style=for-the-badge
-[tests-url]: https://github.com/sebastienrousseau/camt053-mcp/actions/workflows/ci.yml

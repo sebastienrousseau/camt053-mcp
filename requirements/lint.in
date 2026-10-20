@@ -3,12 +3,13 @@
 # FastMCP types rather than treating them as untyped.
 # ruff/black are pinned to the exact versions the CI lint job uses so the
 # check stays deterministic across uv recompiles.
-mcp>=1.2
+# GHSA-84m7-p3x7-pcfv: mcp >=1.8.0,<1.30.0 and >=2.0.0,<2.2.0 are affected.
+mcp>=1.30.0,!=2.0.*,!=2.1.*,<3
 camt053>=0.0.6,<1
 camt053-loader-mt940>=0.0.9
 camt053-loader-mt942>=0.0.1
-ruff==0.16.4
-black==26.5.1
+ruff==0.17.1
+black==26.10.1
 mypy>=1.11,<3.0
 pyjwt[crypto]>=2.15.1,<3
 httpx>=0.27,<1

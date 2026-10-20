@@ -20,8 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Dependencies: `camt053`, `camt053-loader-mt940` and
-  `camt053-loader-mt942` 0.0.20, `black` 26.10.1, `ruff` 0.17.1,
+- Released with the camt053 suite at 0.0.23, after the core and the
+  loaders: `camt053`, `camt053-loader-mt940` and `camt053-loader-mt942`
+  are floored at `>=0.0.23` in `pyproject.toml` and `requirements/*.in`
+  (they were `>=0.0.17`, `>=0.0.9` and `>=0.0.1`), and the Docker image
+  installs `camt053==0.0.23` (it pinned 0.0.14). `verify_versions.py`
+  now fails when any of these differs from the release version.
+- Dependencies: `black` 26.10.1, `ruff` 0.17.1,
   `mypy` 2.4.0, `tomli` 2.5.0, `packaging` 26.3, `virtualenv` 21.14.11;
   actions `codeql-action` 4.39.0, `setup-node` 7.1.0, `sbom-action`
   0.24.3, `upload-artifact` 7.0.2, `scorecard-action` 2.5.0; the

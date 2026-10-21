@@ -9,6 +9,11 @@ one), as a ``## [X.Y.Z]`` heading in ``CHANGELOG.md``, in ``glama.json``
 in ``server.json`` (``version`` and every ``packages[].version``), and
 in ``CITATION.cff`` (``version``).
 
+The camt053 suite releases together at one version, core first and this
+server last, so every floor on a suite member (``pyproject.toml`` and
+``requirements/*.in``) must be ``>=`` this version, and the Dockerfile's
+default ``CAMT053_PIP_SPEC`` must pin ``camt053==`` it.
+
 The Glama directory and the MCP registry read those two manifests; before
 this check they sat several releases behind the package on every server
 in the suite. Standard library only, so the workflow needs no install.
@@ -131,12 +136,51 @@ def _check_citation(expected: str) -> Check:
     )
 
 
+#: The suite members this server depends on, released before it.
+FAMILY = ("camt053", "camt053-loader-mt940", "camt053-loader-mt942")
+
+_FLOOR = re.compile(
+    r'^"?(' + "|".join(re.escape(n) for n in FAMILY) + r')"?\s*=?\s*"?'
+    r"\s*>=\s*([0-9][0-9.]*)",
+    re.MULTILINE,
+)
+
+
+def _floors(text: str) -> list[tuple[str, str]]:
+    """Every ``(member, floor)`` declared in ``text``."""
+    return [(m.group(1), m.group(2)) for m in _FLOOR.finditer(text)]
+
+
+def _check_family(expected: str) -> Check:
+    sources = [ROOT / "pyproject.toml", *sorted(ROOT.glob("requirements/*.in"))]
+    problems = [
+        f"{path.relative_to(ROOT)}: {name}>={floor}, the suite is at {expected}"
+        for path in sources
+        for name, floor in _floors(path.read_text(encoding="utf-8"))
+        if floor != expected
+    ]
+    lines = [f"  suite floors           = {len(problems)} not at {expected}"]
+    dockerfile = ROOT / "Dockerfile"
+    if dockerfile.exists():
+        match = re.search(
+            r'^ARG CAMT053_PIP_SPEC="camt053==([^"]+)"',
+            dockerfile.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        pin = match.group(1) if match else None
+        lines.append(f"  Dockerfile camt053     = {pin}")
+        if pin != expected:
+            problems.append(f"Dockerfile pins camt053=={pin}")
+    return lines, problems
+
+
 CHECKS = (
     _check_package,
     _check_changelog,
     _check_glama,
     _check_server,
     _check_citation,
+    _check_family,
 )
 
 

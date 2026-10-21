@@ -17,11 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every GitHub Action is pinned by full commit SHA, and the CI lockfile
   job installs Poetry from the hash-pinned `requirements/build.txt`
   instead of an unpinned `pip install poetry`.
+- **GHSA-6q48-6c7w-9gw2**: `certifi` before 2026.10.18 trusts the
+  emSign ECC Root CA - G3, whose intermediates have compromised keys.
+  The build tooling floors `certifi` at 2026.10.19, and the lock and the
+  test, fuzz and lint requirements reach it through `camt053` 0.0.23.
 
 ### Changed
 
-- Dependencies: `camt053`, `camt053-loader-mt940` and
-  `camt053-loader-mt942` 0.0.20, `black` 26.10.1, `ruff` 0.17.1,
+- Released with the camt053 suite at 0.0.23, after the core and the
+  loaders: `camt053`, `camt053-loader-mt940` and `camt053-loader-mt942`
+  are floored at `>=0.0.23` in `pyproject.toml` and `requirements/*.in`
+  (they were `>=0.0.17`, `>=0.0.9` and `>=0.0.1`), and the Docker image
+  installs `camt053==0.0.23` (it pinned 0.0.14). `verify_versions.py`
+  now fails when any of these differs from the release version.
+- Dependencies: `black` 26.10.1, `ruff` 0.17.1,
   `mypy` 2.4.0, `tomli` 2.5.0, `packaging` 26.3, `virtualenv` 21.14.11;
   actions `codeql-action` 4.39.0, `setup-node` 7.1.0, `sbom-action`
   0.24.3, `upload-artifact` 7.0.2, `scorecard-action` 2.5.0; the
@@ -34,10 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The scheduled **Suite Consistency** job failed every night: it compared
-  this tree with the `camt053` core's PyPI version. It now checks that
-  the tree matches `camt053-mcp`'s own release, that the server never
-  trails the core, and that the declared `camt053` floor is published.
+- The scheduled **Suite Consistency** job compared this tree with the
+  `camt053` core's PyPI version. It now compares the tree with
+  `camt053-mcp`'s own release, and still requires every member of the
+  suite to publish the core's version: the suite releases together, core
+  first, and a server ahead of the core fails like one left behind.
 - `scripts/verify_versions.py` never read `CITATION.cff`, which shipped
   at 0.0.21 in v0.0.22. It is now checked.
 - The test suite printed an `InsecureKeyLengthWarning` and, on Python

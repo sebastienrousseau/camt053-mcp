@@ -27,13 +27,11 @@ discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.23**: Multi-framework agent adapters (LangChain, CrewAI, LlamaIndex), OAuth 2.1 resource-server auth (RFC 9728)
-> on the HTTP transport, Prometheus metrics, a tamper-evident audit chain,
-> and real-HTTP load benchmarks; 24 MCP tools over stdio, streamable HTTP,
-> SSE or authenticated streamable HTTP, all backed by the shared
-> `camt053.services` layer,
-> for Python 3.10+.
-> [See what's new →][release-0014]
+> **Latest release: v0.0.23**: released with the camt053 suite 0.0.23
+> (core, loaders, writer, language server and this server on one
+> version). Excludes the `mcp` releases affected by GHSA-84m7-p3x7-pcfv,
+> pins every GitHub Action by SHA, and adds a CI complexity gate; 24 MCP
+> tools over stdio, streamable HTTP, SSE or authenticated streamable HTTP.
 
 ## Contents
 

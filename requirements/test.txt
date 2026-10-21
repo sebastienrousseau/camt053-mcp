@@ -12,6 +12,7 @@ anyio==4.15.1 \
     --hash=sha256:6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101 \
     --hash=sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94
     # via
+    #   camt053
     #   httpx
     #   httpx2
     #   mcp
@@ -29,25 +30,26 @@ backports-asyncio-runner==1.2.0 ; python_full_version < '3.11' \
     --hash=sha256:0da0a936a8aeb554eccb426dc55af3ba63bcdc69fa1a600b5bb305413a4477b5 \
     --hash=sha256:a5aa7b2b7d8f8bfcaa2b57313f70792df84e32a2a746f585213373f900b42162
     # via pytest-asyncio
-camt053==0.0.20 \
-    --hash=sha256:1f3bf89f3b69184d78d331a354b9537a38f2237a4daa52c520fa6ab57f16dc78 \
-    --hash=sha256:22e89754463d00373a50efd24123e77ccc34ff1ebd9e9608902ee133f66ca9ec
+camt053==0.0.23 \
+    --hash=sha256:390edeaba1c7915d1b7237c38ef47a3f1a540e714f1260cce6f9422491fd7f78 \
+    --hash=sha256:4f37f08cfb0d3febe5eedb92660a7ebe2087fd4c8baf5fa9808c4ad4f8cefc90
     # via
     #   -r requirements/test.in
     #   camt053-loader-mt940
     #   camt053-loader-mt942
-camt053-loader-mt940==0.0.20 \
-    --hash=sha256:843e44968c68f6569124549e229bc6af6ae57ff435e9fdf363f4cfe8ca71fb77 \
-    --hash=sha256:fb3334242e2d5411b262804fd08105a51c2249c6df60656bea06c52ac6c735a8
+camt053-loader-mt940==0.0.23 \
+    --hash=sha256:235b05b938832f3f70e9bd14e6919786f59c4e2e50fe25b36096b2d69df38718 \
+    --hash=sha256:983aea6e595c591f69846d9649aac9b793554bde059c3384dfdf5441f80efa73
     # via -r requirements/test.in
-camt053-loader-mt942==0.0.20 \
-    --hash=sha256:cb4d40ad73c3846927fd1775baaff86f8cf841ac62f008607daf401fb7bda44c \
-    --hash=sha256:ffe52ad588559dff833e33207d071cca91f3b133a18060c74b7a816dbe255ff1
+camt053-loader-mt942==0.0.23 \
+    --hash=sha256:5c522189b4a5b91c6caacc5d1641b5faa5edab0d6024d701be61775f24e23998 \
+    --hash=sha256:9a9414394ba88dbf6d9e05be91fc6b6145fac1b738ca1fd670bfa35288ba1a58
     # via -r requirements/test.in
-certifi==2026.7.22 \
-    --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775 \
-    --hash=sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55
+certifi==2026.10.19 \
+    --hash=sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae \
+    --hash=sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b
     # via
+    #   camt053
     #   httpcore
     #   httpx
 cffi==2.1.1 ; platform_python_implementation != 'PyPy' \
@@ -378,6 +380,7 @@ h11==0.16.0 \
     --hash=sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1 \
     --hash=sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86
     # via
+    #   camt053
     #   httpcore
     #   httpcore2
     #   uvicorn
@@ -460,6 +463,7 @@ idna==3.20 \
     --hash=sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c
     # via
     #   anyio
+    #   camt053
     #   httpx
     #   httpx2
 iniconfig==2.3.0 \
@@ -736,6 +740,7 @@ pydantic==2.13.5 \
     --hash=sha256:346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73 \
     --hash=sha256:51a9c5f7b2f8e636f04c6cada605d9b6a3bf1348fdf945a3d8869b19bba0ee08
     # via
+    #   camt053
     #   fastapi
     #   mcp
     #   mcp-types
@@ -892,7 +897,9 @@ pytest-cov==7.1.0 \
 python-dotenv==1.2.4 \
     --hash=sha256:42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc \
     --hash=sha256:f0d53e69935a851c0dcc78f3ab7aaccd8cabef0b92382b576b824212902873c0
-    # via uvicorn
+    # via
+    #   camt053
+    #   uvicorn
 python-multipart==0.0.32 \
     --hash=sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e \
     --hash=sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23
@@ -994,7 +1001,9 @@ pyyaml==6.0.3 \
     --hash=sha256:f7057c9a337546edc7973c0d3ba84ddcdf0daa14533c2065749c9075001090e6 \
     --hash=sha256:fa160448684b4e94d80416c0fa4aac48967a969efe22931448d853ada8baf926 \
     --hash=sha256:fc09d0aa354569bc501d4e787133afc08552722d3ab34836a80547331bb5d4a0
-    # via uvicorn
+    # via
+    #   camt053
+    #   uvicorn
 referencing==0.37.0 \
     --hash=sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231 \
     --hash=sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8
@@ -1259,6 +1268,7 @@ starlette==1.7.0 \
     --hash=sha256:67f8e99895493dd2911a03f11314af6ceebeae4e704bb9f43dfc6a9db151c93e \
     --hash=sha256:c79f74ea63cff761804fbbfb182f1e0b440c2d07b164d24700c5a1bab5d6ff5d
     # via
+    #   camt053
     #   fastapi
     #   mcp
     #   sse-starlette

@@ -216,81 +216,89 @@ uvloop = ["uvloop (>=0.15.2) ; sys_platform != \"win32\"", "winloop (>=0.5.0) ; 
 
 [[package]]
 name = "camt053"
-version = "0.0.20"
+version = "0.0.23"
 description = "Camt053 is a Python library for reading ISO 20022 camt Bank-to-Customer Statements (camt.053/052/054) and generating validated reversing entries by return reason code (e.g. AC04 Closed Account)."
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "camt053-0.0.20-py3-none-any.whl", hash = "sha256:22e89754463d00373a50efd24123e77ccc34ff1ebd9e9608902ee133f66ca9ec"},
-    {file = "camt053-0.0.20.tar.gz", hash = "sha256:1f3bf89f3b69184d78d331a354b9537a38f2237a4daa52c520fa6ab57f16dc78"},
+    {file = "camt053-0.0.23-py3-none-any.whl", hash = "sha256:390edeaba1c7915d1b7237c38ef47a3f1a540e714f1260cce6f9422491fd7f78"},
+    {file = "camt053-0.0.23.tar.gz", hash = "sha256:4f37f08cfb0d3febe5eedb92660a7ebe2087fd4c8baf5fa9808c4ad4f8cefc90"},
 ]
 
 [package.dependencies]
+anyio = ">=4.14.2,<5"
+certifi = ">=2026.10.19"
 click = ">=8.1,<9"
 colorama = "0.4.6"
-cryptography = ">=48.0.1,<51.0.0"
+cryptography = ">=50.0.0,<51.0.0"
 defusedxml = "0.7.1"
-fastapi = ">=0.95"
-httpx = ">=0.23"
+fastapi = ">=0.109.1,<1"
+h11 = ">=0.16.0,<1"
+httpx = ">=0.23,<1"
+idna = ">=3.15,<4"
 jinja2 = "3.1.6"
 jsonschema = ">=4.20,<4.27"
 markupsafe = ">=2.1,<4"
+pydantic = ">=2.4.0,<3"
 pygments = ">=2.20.0,<3.0.0"
+python-dotenv = ">=1.2.2,<2"
+pyyaml = ">=5.4,<7"
 rich = ">=13.7.1,<16"
-uvicorn = {version = ">=0.20", extras = ["standard"]}
+starlette = ">=1.3.1,<2"
+uvicorn = {version = ">=0.20,<1", extras = ["standard"]}
 xmlschema = ">=4.3.2,<5.0.0"
 
 [package.extras]
-fast = ["lxml (>=5.0,<7)"]
-telemetry = ["opentelemetry-api (>=1.20)"]
+fast = ["lxml (>=6.1.0,<7)"]
+telemetry = ["opentelemetry-api (>=1.20,<2)"]
 
 [[package]]
 name = "camt053-loader-mt940"
-version = "0.0.20"
+version = "0.0.23"
 description = "Convert legacy SWIFT MT940 bank statements to camt.053 ParsedDocument."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "camt053_loader_mt940-0.0.20-py3-none-any.whl", hash = "sha256:fb3334242e2d5411b262804fd08105a51c2249c6df60656bea06c52ac6c735a8"},
-    {file = "camt053_loader_mt940-0.0.20.tar.gz", hash = "sha256:843e44968c68f6569124549e229bc6af6ae57ff435e9fdf363f4cfe8ca71fb77"},
+    {file = "camt053_loader_mt940-0.0.23-py3-none-any.whl", hash = "sha256:983aea6e595c591f69846d9649aac9b793554bde059c3384dfdf5441f80efa73"},
+    {file = "camt053_loader_mt940-0.0.23.tar.gz", hash = "sha256:235b05b938832f3f70e9bd14e6919786f59c4e2e50fe25b36096b2d69df38718"},
 ]
 
 [package.dependencies]
-camt053 = ">=0.0.16,<1"
+camt053 = ">=0.0.23,<1"
 
 [package.extras]
-dev = ["interrogate (>=1.7)", "mypy (>=1.11)", "packaging (>=23)", "pytest (>=8)", "pytest-cov (>=5)", "ruff (>=0.6)", "tomli (>=2) ; python_version < \"3.11\""]
+dev = ["complexipy (>=8.1)", "hypothesis (>=6.100)", "interrogate (>=1.7)", "mypy (>=1.11)", "packaging (>=23)", "pytest (>=8)", "pytest-cov (>=5)", "radon (>=6.0.1)", "ruff (>=0.6)", "tomli (>=2) ; python_version < \"3.11\""]
 
 [[package]]
 name = "camt053-loader-mt942"
-version = "0.0.20"
+version = "0.0.23"
 description = "Convert legacy SWIFT MT942 interim transaction reports to camt.052 ParsedDocument."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "camt053_loader_mt942-0.0.20-py3-none-any.whl", hash = "sha256:cb4d40ad73c3846927fd1775baaff86f8cf841ac62f008607daf401fb7bda44c"},
-    {file = "camt053_loader_mt942-0.0.20.tar.gz", hash = "sha256:ffe52ad588559dff833e33207d071cca91f3b133a18060c74b7a816dbe255ff1"},
+    {file = "camt053_loader_mt942-0.0.23-py3-none-any.whl", hash = "sha256:9a9414394ba88dbf6d9e05be91fc6b6145fac1b738ca1fd670bfa35288ba1a58"},
+    {file = "camt053_loader_mt942-0.0.23.tar.gz", hash = "sha256:5c522189b4a5b91c6caacc5d1641b5faa5edab0d6024d701be61775f24e23998"},
 ]
 
 [package.dependencies]
-camt053 = ">=0.0.16,<1"
+camt053 = ">=0.0.23,<1"
 
 [package.extras]
-dev = ["interrogate (>=1.7)", "mypy (>=1.11)", "pytest (>=8)", "pytest-cov (>=5)", "ruff (>=0.6)"]
+dev = ["complexipy (>=8.1)", "hypothesis (>=6.100)", "interrogate (>=1.7)", "mypy (>=1.11,<3)", "packaging (>=23.0)", "pytest (>=9.0.3,<10)", "pytest-cov (>=6.0.0,<8)", "radon (>=6.0)", "reuse (>=5.0)", "ruff (>=0.17,<0.18)", "tomli (>=2.0) ; python_version < \"3.11\""]
 
 [[package]]
 name = "certifi"
-version = "2026.6.17"
+version = "2026.10.19"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "certifi-2026.6.17-py3-none-any.whl", hash = "sha256:2227dcbaafe0d2f59279d1762ddddc37783ed4354594f194ffc31d20f41fc3db"},
-    {file = "certifi-2026.6.17.tar.gz", hash = "sha256:024c88eeec92ca068db80f02b8b07c9cef7b9fe261d1d535abfd5abd6f6af432"},
+    {file = "certifi-2026.10.19-py3-none-any.whl", hash = "sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b"},
+    {file = "certifi-2026.10.19.tar.gz", hash = "sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae"},
 ]
 
 [[package]]
@@ -3079,4 +3087,4 @@ vector = ["sqlite-vec"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "f930e39cb9d19b279561991ec123d348929cc8efb39678741f0f81bd0893f1fc"
+content-hash = "efb2a26f2bde8d951c3f34e1e82bc3eace2ed91a91f61c9a6c6c1ac1ddd4d752"

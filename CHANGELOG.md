@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every GitHub Action is pinned by full commit SHA, and the CI lockfile
   job installs Poetry from the hash-pinned `requirements/build.txt`
   instead of an unpinned `pip install poetry`.
+- **GHSA-6q48-6c7w-9gw2**: `certifi` before 2026.10.18 trusts the
+  emSign ECC Root CA - G3, whose intermediates have compromised keys.
+  The build tooling floors `certifi` at 2026.10.19, and the lock and the
+  test, fuzz and lint requirements reach it through `camt053` 0.0.23.
 
 ### Changed
 

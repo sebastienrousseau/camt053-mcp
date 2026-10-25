@@ -1,10 +1,17 @@
-# Build/publish tooling for the release "publish" + "sbom" jobs.
+# Build/publish tooling for the release "publish" + "sbom" jobs and the CI
+# lockfile check, all on Python 3.12, so it is compiled for 3.12 (see the
+# Makefile).
 poetry
 twine
 # Security floors for transitive dependencies
 dulwich>=1.2.9
-virtualenv>=21.14.6
+# virtualenv 21.14.9 to 21.14.12: GHSA-cx6f-vjhg-g3cc (the bash activator
+# leaves --prompt unescaped in PS1), fixed in 21.14.13.
+virtualenv>=21.14.13
 urllib3>=2.8.0
 # certifi: GHSA-6q48-6c7w-9gw2 (compromised emSign ECC Root CA - G3
 # intermediates), fixed in 2026.10.19.
 certifi>=2026.10.19
+# filelock <= 4.2.0: GHSA-9vhv-jxww-xfm5, GHSA-567q-5qvw-pf92 and
+# GHSA-v4x8-3wr5-3wq8; 4.2.1 needs Python 3.11, hence the 3.12 compile.
+filelock>=4.2.1

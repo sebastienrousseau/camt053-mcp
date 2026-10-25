@@ -32,6 +32,10 @@ pyjwt = { version = ">=2.10,<3", extras = ["crypto"] }
 httpx = ">=0.27,<1"
 # Prometheus metrics on the MCP layer (camt053_mcp.observability).
 prometheus-client = ">=0.20,<2"
+# Transitive, via the MCP SDK (mcp 2.x requires opentelemetry-api):
+# GHSA-xcq7-p3pf-p88h affects releases before 1.45.1, and poetry.lock
+# held 1.44.0. Floored so no affected release resolves.
+opentelemetry-api = ">=1.45.1,<2"
 # Optional OpenTelemetry tracing (camt053_mcp.tracing), gated behind the
 # ``otel`` extra. The base install pulls in NEITHER package; tracing is
 # entirely opt-in and imported lazily. opentelemetry-api is pulled in

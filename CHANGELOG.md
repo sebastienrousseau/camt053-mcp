@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- `opentelemetry-api` is floored at 1.45.1 (GHSA-xcq7-p3pf-p88h): the MCP
+  SDK requires it, `poetry.lock` held 1.44.0 and the test, lint and fuzz
+  trees 1.45.0. The OpenTelemetry packages in the lock move with it, to
+  1.45.1.
+- The release build tooling (`requirements/build.txt`) floors
+  `filelock >= 4.2.1` (GHSA-9vhv-jxww-xfm5, GHSA-567q-5qvw-pf92,
+  GHSA-v4x8-3wr5-3wq8; it pinned 4.0.10) and `virtualenv >= 21.14.13`
+  (GHSA-cx6f-vjhg-g3cc; it pinned 21.14.11). filelock 4.2.1 needs
+  Python 3.11, so the tree is compiled for 3.12, the Python of every job
+  that installs it.
+
 ## [0.0.23] - 2026-10-20
 
 ### Security
@@ -639,6 +654,7 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Python 3.10+ support; depends on `camt053` (>=0.0.1) and `mcp` (>=1.2)
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
+[Unreleased]: https://github.com/sebastienrousseau/camt053-mcp/compare/v0.0.23...HEAD
 [0.0.23]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.23
 [0.0.22]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.22
 [0.0.21]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.21

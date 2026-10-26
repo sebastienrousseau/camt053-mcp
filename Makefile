@@ -41,10 +41,14 @@ fuzz: ## Run the Atheris fuzz harness locally (set RUNS to override)
 pip-compile: ## Regenerate hash-pinned requirements/*.txt from requirements/*.in
 	@command -v uv >/dev/null || { echo "uv is required: https://docs.astral.sh/uv/"; exit 1; }
 	@for f in requirements/*.in; do \
+		[ "$$f" = requirements/build.in ] && continue; \
 		echo "compiling $$f"; \
 		uv pip compile --quiet --generate-hashes --universal \
 			--python-version 3.10 "$$f" -o "$${f%.in}.txt"; \
 	done
+	@echo "compiling requirements/build.in (3.12, the toolchain's Python: filelock 4.2.1 needs 3.11)"
+	@uv pip compile --quiet --generate-hashes --universal \
+		--python-version 3.12 requirements/build.in -o requirements/build.txt
 
 clean: ## Remove build artifacts and caches
 	rm -rf build/ dist/ *.egg-info .eggs/

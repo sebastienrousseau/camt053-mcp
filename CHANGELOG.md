@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- The MCP Inspector job installs camt053-mcp hash-pinned: the runtime
+  set from `requirements/test.txt`, then the package as a wheel built
+  with the hash-pinned `requirements/build.txt` backend, instead of an
+  unpinned `pip install .` (code-scanning #110, Pinned-Dependencies).
 - `opentelemetry-api` is floored at 1.45.1 (GHSA-xcq7-p3pf-p88h): the MCP
   SDK requires it, `poetry.lock` held 1.44.0 and the test, lint and fuzz
   trees 1.45.0. The OpenTelemetry packages in the lock move with it, to

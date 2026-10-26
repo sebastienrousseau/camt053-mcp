@@ -25,8 +25,18 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install camt053-mcp
-        run: pip install .
+      # Hash-pinned throughout: the runtime set from requirements/test.txt,
+      # then the package as a wheel built with the hash-pinned build backend.
+      # Scorecard counts `pip install .` as unpinned, a local wheel installed
+      # with --no-deps as pinned.
+      - name: Install camt053-mcp (hash-pinned)
+        run: |
+          pip install --require-hashes -r requirements/test.txt
+          python -m venv "$RUNNER_TEMP/build"
+          "$RUNNER_TEMP/build/bin/pip" install --require-hashes -r requirements/build.txt
+          "$RUNNER_TEMP/build/bin/pip" wheel --no-deps --no-build-isolation --wheel-dir wheelhouse .
+          pip install --no-deps wheelhouse/*.whl
+          pip check
 
       # The Inspector is pinned to an exact release (2.10.1, 2026-10-08) so a new
       # npm publish cannot change what CI runs; raise it deliberately.

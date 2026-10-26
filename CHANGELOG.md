@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (GHSA-cx6f-vjhg-g3cc; it pinned 21.14.11). filelock 4.2.1 needs
   Python 3.11, so the tree is compiled for 3.12, the Python of every job
   that installs it.
+- The release SBOMs (CycloneDX and the pip-licenses manifest) describe
+  the locked runtime environment. The SBOM tools are installed outside
+  Poetry's venv, so `poetry run` pointed them at their own interpreter
+  and the SBOM listed the tooling, not the runtime set; both now take
+  the venv's interpreter explicitly.
+- The MCP Inspector conformance job pins `@modelcontextprotocol/inspector`
+  to 2.10.1, so a new npm publish cannot change what CI runs.
 
 ## [0.0.23] - 2026-10-20
 

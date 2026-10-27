@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The MCP Inspector conformance job pins `@modelcontextprotocol/inspector`
   to 2.10.1, so a new npm publish cannot change what CI runs.
 
+### Changed
+
+- Dependabot's weekly pip run no longer fails. It resolves the whole
+  "/" job on Python 3.10, the floor in `pyproject.toml`, and
+  `requirements/build.in` needs 3.11 (`filelock >= 4.2.1`), so every
+  update to a release-tooling package (certifi, dulwich) ended in
+  `dependency_file_not_resolvable`. "/" now leaves `build.in` and
+  `build.txt` out, and a second pip entry updates them from
+  `/requirements`, where Dependabot uses its newest Python. A docker
+  entry keeps the server Dockerfile's base-image digest current.
+
 ## [0.0.23] - 2026-10-20
 
 ### Security

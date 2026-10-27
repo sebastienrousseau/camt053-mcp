@@ -2,8 +2,19 @@ version: 2
 
 updates:
   # Python dependencies (Poetry / pip ecosystem).
+  #
+  # Dependabot resolves a pip job on one Python: for "/" the lowest that
+  # pyproject.toml allows (3.10). requirements/build.in is compiled for
+  # 3.12 and needs it (filelock >= 4.2.1 requires 3.11), so updating any
+  # of its packages from "/" failed with dependency_file_not_resolvable
+  # and turned the whole run red. "/" leaves it out, and the entry below
+  # updates it from /requirements, where no pyproject.toml pins the
+  # Python and Dependabot uses its newest.
   - package-ecosystem: "pip"
     directory: "/"
+    exclude-paths:
+      - "requirements/build.in"
+      - "requirements/build.txt"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -20,6 +31,47 @@ updates:
         update-types:
           - "minor"
           - "patch"
+
+  # The 3.12 release tooling only; every other set stays with "/" above.
+  - package-ecosystem: "pip"
+    directory: "/requirements"
+    exclude-paths:
+      - "requirements/complexity.*"
+      - "requirements/docker.*"
+      - "requirements/fuzz.*"
+      - "requirements/lint.*"
+      - "requirements/sbom.*"
+      - "requirements/security.*"
+      - "requirements/test.*"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      build-tooling:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Base image of the server's Dockerfile (digest-pinned).
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "docker"
 
   # ClusterFuzzLite base image (keeps the digest-pinned Dockerfile current).
   - package-ecosystem: "docker"

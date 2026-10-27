@@ -93,7 +93,7 @@ the concrete control(s) that implement it in this repo.
 | :--- | :--- |
 | **PO.1** Define security requirements | This `SECURITY.md`, plus the in-scope/out-of-scope sections above. |
 | **PO.3** Implement supporting toolchains | `pyproject.toml`; `.github/workflows/ci.yml` (test + lint + security scan); `.github/workflows/scorecard.yml`. |
-| **PO.4** Define and use criteria for software security checks | CI enforces tests on Python 3.10/3.11/3.12, ruff lint, black formatting, mypy, bandit security scan, interrogate docstring coverage; Scorecard runs weekly. |
+| **PO.4** Define and use criteria for software security checks | CI enforces tests on Python 3.11/3.12/3.13/3.14, ruff lint, black formatting, mypy, bandit security scan, interrogate docstring coverage; Scorecard runs weekly. |
 | **PO.5** Implement and maintain secure environments | PyPI Trusted Publishing (OIDC, no long-lived tokens); branch protection + signed commits on `main`; per-workflow `permissions:` minimisation. |
 | **PS.1** Protect all forms of code from unauthorized access and tampering | Signed commits (SSH ed25519); branch protection; required PR reviews; `persist-credentials: false` on Scorecard checkout. |
 | **PS.2** Provide a mechanism for verifying software release integrity | Signed git tags; `actions/attest-build-provenance@v3` SLSA L3 provenance attestations; PEP 740 sigstore attestations on PyPI uploads (`pypa/gh-action-pypi-publish` with `attestations: true`). |

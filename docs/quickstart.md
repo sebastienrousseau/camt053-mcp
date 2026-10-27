@@ -6,7 +6,7 @@ for `camt053-mcp`.
 ## 1. Install
 
 `camt053-mcp` runs on macOS, Linux, and Windows and requires Python
-3.10+. It pulls in the core `camt053` library and the MCP SDK
+3.11+. It pulls in the core `camt053` library and the MCP SDK
 automatically.
 
 ```sh

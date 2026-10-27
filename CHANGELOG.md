@@ -45,6 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Python 3.11 is the minimum supported version; 3.10 is dropped, in
+  lockstep with the camt053 suite. Across the suite, the newest
+  hypothesis release requires 3.11, so Dependabot could not resolve
+  updates against a 3.10 floor. `pyproject.toml` declares
+  `python = ">=3.11,<4.0"` (the classifiers Poetry derives follow), the
+  ruff, black and mypy targets are 3.11, CI tests 3.11 to 3.14, the
+  `tomli` backport and the 3.10 `tomllib` fallback in
+  `scripts/check_suite_consistency.py` are gone, and `poetry.lock` and
+  `requirements/*.txt` are recompiled for 3.11, which only removes the
+  pins that applied below it. Install on 3.11 or newer.
 - Dependabot's weekly pip run no longer fails. It resolves the whole
   "/" job on Python 3.10, the floor in `pyproject.toml`, and
   `requirements/build.in` needs 3.11 (`filelock >= 4.2.1`), so every

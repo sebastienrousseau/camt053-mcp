@@ -4,12 +4,12 @@ updates:
   # Python dependencies (Poetry / pip ecosystem).
   #
   # Dependabot resolves a pip job on one Python: for "/" the lowest that
-  # pyproject.toml allows (3.10). requirements/build.in is compiled for
-  # 3.12 and needs it (filelock >= 4.2.1 requires 3.11), so updating any
-  # of its packages from "/" failed with dependency_file_not_resolvable
-  # and turned the whole run red. "/" leaves it out, and the entry below
-  # updates it from /requirements, where no pyproject.toml pins the
-  # Python and Dependabot uses its newest.
+  # pyproject.toml allows (3.11). requirements/build.in is compiled for
+  # 3.12, the release toolchain's Python, so "/" leaves it out and the
+  # entry below updates it from /requirements, where no pyproject.toml
+  # pins the Python and Dependabot uses its newest. When the floor was
+  # 3.10, updating build.in from "/" failed with
+  # dependency_file_not_resolvable (filelock >= 4.2.1 requires 3.11).
   - package-ecosystem: "pip"
     directory: "/"
     exclude-paths:

@@ -44,7 +44,7 @@ server in the ecosystem matches its tool coverage.
   CycloneDX 1.6 + SPDX 2.3 + pip-licenses SBOMs on every GitHub
   release, NIST SP 800-218 SSDF practice mapping in `SECURITY.md`,
   a suite-consistency gate across the six `camt053` packages, CI on
-  Python 3.10 to 3.14.
+  Python 3.11 to 3.14.
 
 ## Next
 

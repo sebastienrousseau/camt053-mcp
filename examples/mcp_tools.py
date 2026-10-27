@@ -2,7 +2,7 @@
 """Example: call the camt053-mcp server's tools in-process.
 
 Usage:
-    pip install camt053-mcp     # requires Python 3.10+
+    pip install camt053-mcp     # requires Python 3.11+
     python examples/mcp_tools.py
 
 The camt053 MCP server (launched as ``camt053-mcp`` over stdio) exposes the

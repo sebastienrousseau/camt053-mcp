@@ -15,7 +15,7 @@ packages = [
 camt053-mcp = "camt053_mcp.server:main"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4.0"
+python = ">=3.11,<4.0"
 camt053 = ">=0.0.23,<1"
 camt053-loader-mt940 = ">=0.0.23"
 camt053-loader-mt942 = ">=0.0.23"
@@ -71,10 +71,6 @@ ruff = ">=0.1,<0.18"
 mypy = ">=1.11,<3.0"
 interrogate = "^1.7"
 bandit = "^1.7.0"
-# tests/test_suite_conformance.py parses pyproject.toml. tomllib is
-# stdlib only from 3.11 and the suite floor is 3.10, so the backport is
-# needed there, or the conformance gate simply does not run on 3.10.
-tomli = { version = ">=2", python = "<3.11" }
 packaging = ">=23"
 
 [tool.interrogate]
@@ -95,7 +91,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 79
 extend-exclude = "tests/test_suite_conformance\\.py"
-target-version = ['py310']
+target-version = ['py311']
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -135,7 +131,7 @@ exclude_also = [
 
 [tool.ruff]
 line-length = 79
-target-version = "py310"
+target-version = "py311"
 extend-exclude = ["*.md", "tmp_env", ".venv", ".eggs"]
 
 [tool.ruff.lint]
@@ -145,6 +141,9 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/conftest.py" = ["E402"]
+# Vendored and byte-pinned (see [tool.black]): its 3.10 tomli fallback
+# is fixed in the canonical copy, not here.
+"tests/test_suite_conformance.py" = ["UP036"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -152,7 +151,7 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true

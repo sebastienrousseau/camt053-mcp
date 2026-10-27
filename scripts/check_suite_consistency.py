@@ -37,10 +37,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover - exercised only on the 3.10 floor
-    import tomli as tomllib
+import tomllib
 
 ROOT = Path(__file__).resolve().parent.parent
 

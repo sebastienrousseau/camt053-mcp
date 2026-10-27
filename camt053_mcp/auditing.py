@@ -62,7 +62,7 @@ import os
 import threading
 from collections.abc import Mapping
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from camt053.audit import HashChain
@@ -186,9 +186,7 @@ def audit_event(
         "service": SERVICE_NAME,
         "scope": scope or "-",
         "event": event_type,
-        "timestamp_utc": datetime.now(timezone.utc)
-        .isoformat()
-        .replace("+00:00", "Z"),
+        "timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         **fields,
     }
     chain = _active_chain()

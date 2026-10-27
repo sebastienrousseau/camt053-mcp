@@ -11,8 +11,8 @@ in ``CITATION.cff`` (``version``).
 
 The camt053 suite releases together at one version, core first and this
 server last, so every floor on a suite member (``pyproject.toml`` and
-``requirements/*.in``) must be ``>=`` this version, and the Dockerfile's
-default ``CAMT053_PIP_SPEC`` must pin ``camt053==`` it.
+``requirements/*.in``) must be ``>=`` this version, and the container
+image's hash-pinned ``requirements/docker.txt`` must pin ``camt053==`` it.
 
 The Glama directory and the MCP registry read those two manifests; before
 this check they sat several releases behind the package on every server
@@ -152,7 +152,10 @@ def _floors(text: str) -> list[tuple[str, str]]:
 
 
 def _check_family(expected: str) -> Check:
-    sources = [ROOT / "pyproject.toml", *sorted(ROOT.glob("requirements/*.in"))]
+    sources = [
+        ROOT / "pyproject.toml",
+        *sorted(ROOT.glob("requirements/*.in")),
+    ]
     problems = [
         f"{path.relative_to(ROOT)}: {name}>={floor}, the suite is at {expected}"
         for path in sources
@@ -160,17 +163,17 @@ def _check_family(expected: str) -> Check:
         if floor != expected
     ]
     lines = [f"  suite floors           = {len(problems)} not at {expected}"]
-    dockerfile = ROOT / "Dockerfile"
-    if dockerfile.exists():
+    image_lock = ROOT / "requirements" / "docker.txt"
+    if image_lock.exists():
         match = re.search(
-            r'^ARG CAMT053_PIP_SPEC="camt053==([^"]+)"',
-            dockerfile.read_text(encoding="utf-8"),
+            r"^camt053==([^\s\\]+)",
+            image_lock.read_text(encoding="utf-8"),
             re.MULTILINE,
         )
         pin = match.group(1) if match else None
-        lines.append(f"  Dockerfile camt053     = {pin}")
+        lines.append(f"  image camt053          = {pin}")
         if pin != expected:
-            problems.append(f"Dockerfile pins camt053=={pin}")
+            problems.append(f"requirements/docker.txt pins camt053=={pin}")
     return lines, problems
 
 

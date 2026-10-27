@@ -137,7 +137,6 @@ open-source project, and are recorded here so their status is explicit.
 All **code-fixable** Scorecard checks are satisfied: Pinned-Dependencies
 (SHA-pinned GitHub Actions + hash-pinned `pip` installs), Token-Permissions
 (least-privilege workflow tokens), SAST (CodeQL on push/PR), and Fuzzing
-(ClusterFuzzLite). The one residual Pinned-Dependencies signal is
-`pip install .` (installing this repository's own checked-out source in
-`mcp-inspect.yml` and the `Dockerfile`), which has no external version or
-hash to pin and is an accepted residual.
+(ClusterFuzzLite). The container image installs its whole runtime set from
+the hash-pinned `requirements/docker.txt` and then this repository's own
+wheel with `--no-deps`, so it fetches nothing unpinned.

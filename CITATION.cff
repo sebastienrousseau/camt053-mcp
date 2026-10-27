@@ -12,8 +12,8 @@ authors:
   - family-names: Rousseau
     given-names: Sebastien
     email: sebastian.rousseau@gmail.com
-version: "0.0.23"
-date-released: "2026-10-20"
+version: "0.0.24"
+date-released: "2026-10-27"
 license: "Apache-2.0 OR MIT"
 repository-code: "https://github.com/sebastienrousseau/camt053-mcp"
 url: "https://sebastienrousseau.github.io/camt053/"

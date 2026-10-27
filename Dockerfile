@@ -11,28 +11,24 @@ WORKDIR /build
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Pin can be overridden at build-time so the GHCR pipeline can install
-# camt053 from a matching feat/* branch before the parent release hits
-# PyPI; the default pins the published release poetry.lock targets. The
-# git client is needed only when the override spec is a git+ URL; it
-# stays in this build stage and never ships in the final image.
-ARG CAMT053_PIP_SPEC="camt053==0.0.23"
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git \
-    && rm -rf /var/lib/apt/lists/*
-
+# Every dependency, and the poetry-core build backend, comes from
+# requirements/docker.txt, hash-pinned and compiled from docker.in, so
+# the build installs nothing unpinned and the image holds exactly the
+# reviewed set (OpenSSF Scorecard Pinned-Dependencies). The package is
+# built from this checkout and installed with --no-deps on top.
+#
 # pyproject.toml carries ``readme = "README.md"``, so README.md must be
-# present at build-time for ``pip install .`` to resolve the package
-# metadata.
+# present at build-time for the wheel build to resolve the metadata.
+COPY requirements/docker.txt ./requirements/docker.txt
 COPY pyproject.toml README.md ./
 COPY camt053_mcp ./camt053_mcp
 
-# Install camt053 from PyPI (or the override spec), then layer this
-# package on top inside a self-contained virtualenv.
 RUN python -m venv /opt/venv \
-    && /opt/venv/bin/pip install "$CAMT053_PIP_SPEC" \
-    && /opt/venv/bin/pip install .
-
+    && /opt/venv/bin/pip install --require-hashes -r requirements/docker.txt \
+    && /opt/venv/bin/pip wheel --no-deps --no-build-isolation --wheel-dir /tmp/wheel . \
+    && /opt/venv/bin/pip install --no-deps /tmp/wheel/*.whl \
+    && /opt/venv/bin/pip check \
+    && rm -rf /tmp/wheel
 
 FROM python:3.12-slim@sha256:c3d81d25b3154142b0b42eb1e61300024426268edeb5b5a26dd7ddf64d9daf28
 

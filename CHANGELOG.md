@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- The container image installs only hash-pinned packages. The
+  `Dockerfile` ran `pip install "$CAMT053_PIP_SPEC"` and `pip install .`,
+  which resolved camt053, the MCP SDK and every transitive dependency,
+  and the poetry-core build backend, from PyPI at build time, unpinned
+  and unverified (Scorecard Pinned-Dependencies, code-scanning #95 and
+  #96). It now installs `requirements/docker.txt`, compiled with hashes
+  from `requirements/docker.in`, with `--require-hashes`, builds this
+  checkout's wheel against the pinned backend, installs it with
+  `--no-deps` and runs `pip check`. The build-time `CAMT053_PIP_SPEC`
+  override and the `git` package it needed are gone;
+  `scripts/verify_versions.py` now checks that the image lock pins
+  camt053 at the suite version.
 - The MCP Inspector job installs camt053-mcp hash-pinned: the runtime
   set from `requirements/test.txt`, then the package as a wheel built
   with the hash-pinned `requirements/build.txt` backend, instead of an

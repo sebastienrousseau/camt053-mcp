@@ -27,7 +27,7 @@ def family(monkeypatch, tmp_path):
         (tmp_path / "pyproject.toml").write_text(pyproject)
         (tmp_path / "requirements" / "test.in").write_text(req)
         if docker is not None:
-            (tmp_path / "Dockerfile").write_text(docker)
+            (tmp_path / "requirements" / "docker.txt").write_text(docker)
         return module._check_family("0.0.23")[1]
 
     return run
@@ -39,7 +39,11 @@ camt053-loader-mt940 = ">=0.0.23"
 camt053-loader-mt942 = ">=0.0.23"
 """
 REQ = "camt053>=0.0.23,<1\ncamt053-loader-mt940>=0.0.23\n"
-DOCKER = 'ARG CAMT053_PIP_SPEC="camt053==0.0.23"\n'
+DOCKER = (
+    "camt053==0.0.23 \\\n"
+    "    --hash=sha256:00\n"
+    "camt053-loader-mt940==0.0.23 \\\n"
+)
 
 
 def test_a_tree_on_the_suite_version_is_clean(family):
@@ -61,10 +65,18 @@ def test_a_stale_requirements_floor_fails(family):
     ]
 
 
-def test_a_stale_docker_pin_fails(family):
-    stale = DOCKER.replace("0.0.23", "0.0.14")
-    assert family(PYPROJECT, REQ, stale) == ["Dockerfile pins camt053==0.0.14"]
+def test_a_stale_image_pin_fails(family):
+    stale = DOCKER.replace("camt053==0.0.23", "camt053==0.0.14")
+    assert family(PYPROJECT, REQ, stale) == [
+        "requirements/docker.txt pins camt053==0.0.14"
+    ]
 
 
-def test_no_dockerfile_is_not_a_problem(family):
+def test_an_image_lock_without_camt053_fails(family):
+    assert family(PYPROJECT, REQ, "mcp==2.3.0\n") == [
+        "requirements/docker.txt pins camt053==None"
+    ]
+
+
+def test_no_image_lock_is_not_a_problem(family):
     assert family(PYPROJECT, REQ, None) == []

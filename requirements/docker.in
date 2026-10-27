@@ -1,0 +1,19 @@
+# Runtime dependencies of the container image (Dockerfile), hash-pinned in
+# docker.txt so the image build installs nothing unpinned (OpenSSF
+# Scorecard Pinned-Dependencies). The package itself goes on with
+# `--no-deps`. Mirrors pyproject [tool.poetry.dependencies]; the image is
+# the core install, without the `otel` and `vector` extras.
+# Compiled to docker.txt with hashes via: make pip-compile
+camt053>=0.0.23,<1
+camt053-loader-mt940>=0.0.23
+camt053-loader-mt942>=0.0.23
+# GHSA-84m7-p3x7-pcfv: mcp >=1.8.0,<1.30.0 and >=2.0.0,<2.2.0 are affected.
+mcp>=1.30.0,!=2.0.*,!=2.1.*,<3
+pyjwt[crypto]>=2.15.1,<3
+httpx>=0.27,<1
+prometheus-client>=0.20,<2
+# opentelemetry-api (via mcp): GHSA-xcq7-p3pf-p88h, fixed in 1.45.1.
+opentelemetry-api>=1.45.1,<2
+# Build backend for `pip wheel --no-deps --no-build-isolation .` in the
+# image, pinned by hash here instead of fetched unpinned at build time.
+poetry-core

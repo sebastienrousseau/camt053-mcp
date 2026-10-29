@@ -12,7 +12,7 @@
   <a href="https://sebastienrousseau.github.io/camt053/"><img src="https://img.shields.io/badge/docs-camt053-blue?style=for-the-badge&labelColor=555555&logo=readthedocs" alt="Docs" height="28" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/camt053-mcp"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/camt053-mcp?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" height="28" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg?style=for-the-badge" alt="License: Apache-2.0 OR MIT" height="28" /></a>
-  <a href="https://github.com/sebastienrousseau/camt053-mcp/blob/main/docs/POLICIES.md"><img src="https://img.shields.io/badge/Python-3.10%2B-93450a.svg?style=for-the-badge&logo=python" alt="Python 3.10 or newer" height="28" /></a>
+  <a href="https://github.com/sebastienrousseau/camt053-mcp/blob/main/docs/POLICIES.md"><img src="https://img.shields.io/badge/Python-3.11%2B-93450a.svg?style=for-the-badge&logo=python" alt="Python 3.11 or newer" height="28" /></a>
   <a href="https://www.bestpractices.dev/projects/13374"><img src="https://img.shields.io/cii/level/13374?style=for-the-badge&label=OpenSSF%20Best%20Practices&logo=openssf" alt="OpenSSF Best Practices" height="28" /></a>
   <a href="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp"><img src="https://glama.ai/mcp/servers/sebastienrousseau/camt053-mcp/badges/score.svg" alt="Glama MCP server score" height="28" /></a>
 </p>
@@ -27,11 +27,12 @@ discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.23**: released with the camt053 suite 0.0.23
+> **Latest release: v0.0.24**: released with the camt053 suite 0.0.24
 > (core, loaders, writer, language server and this server on one
-> version). Excludes the `mcp` releases affected by GHSA-84m7-p3x7-pcfv,
-> pins every GitHub Action by SHA, and adds a CI complexity gate; 24 MCP
-> tools over stdio, streamable HTTP, SSE or authenticated streamable HTTP.
+> version). Requires Python 3.11 or newer, builds the container image
+> from hash-pinned packages only, and floors `opentelemetry-api` at
+> 1.45.1 (GHSA-xcq7-p3pf-p88h); 24 MCP tools over stdio, streamable
+> HTTP, SSE or authenticated streamable HTTP.
 
 ## Contents
 
@@ -132,7 +133,7 @@ The suite also includes per-family servers —
 
 ## Install
 
-**camt053-mcp** runs on macOS, Linux, and Windows and requires **Python 3.10+**
+**camt053-mcp** runs on macOS, Linux, and Windows and requires **Python 3.11+**
 and **pip**. It pulls in the core `camt053` library and the MCP SDK
 automatically.
 

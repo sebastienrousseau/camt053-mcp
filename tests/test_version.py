@@ -26,8 +26,8 @@ _PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
 def _pyproject_version() -> str:
     """Extract the project version from pyproject.toml via regex.
 
-    A regex is used deliberately instead of ``tomllib`` because Python 3.10
-    is in the CI matrix and ``tomllib`` only landed in the stdlib in 3.11.
+    A regex keeps the check identical to ``scripts/verify_versions.py``,
+    which reads the same field the same way.
     """
     text = _PYPROJECT.read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)

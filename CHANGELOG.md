@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.24] - 2026-10-29
+
 ### Security
 
 - The container image installs only hash-pinned packages. The
@@ -45,14 +47,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Dependabot's weekly pip run no longer fails. It resolves the whole
-  "/" job on Python 3.10, the floor in `pyproject.toml`, and
+- Released with the camt053 suite 0.0.24: `camt053`,
+  `camt053-loader-mt940` and `camt053-loader-mt942` are floored at
+  0.0.24 in `pyproject.toml` and `requirements/*.in`, and the container
+  image pins `camt053==0.0.24`.
+- Python 3.11 is the minimum supported version; 3.10 is dropped, in
+  lockstep with the camt053 suite. Across the suite, the newest
+  hypothesis release requires 3.11, so Dependabot could not resolve
+  updates against a 3.10 floor. `pyproject.toml` declares
+  `python = ">=3.11,<4.0"` (the classifiers Poetry derives follow), the
+  ruff, black and mypy targets are 3.11, CI tests 3.11 to 3.14, the
+  `tomli` backport and the 3.10 `tomllib` fallback in
+  `scripts/check_suite_consistency.py` are gone, and `poetry.lock` and
+  `requirements/*.txt` are recompiled for 3.11, which only removes the
+  pins that applied below it. Install on 3.11 or newer.
+- Dependabot's weekly pip run no longer fails. It resolved the whole
+  "/" job on the floor in `pyproject.toml`, then Python 3.10, and
   `requirements/build.in` needs 3.11 (`filelock >= 4.2.1`), so every
   update to a release-tooling package (certifi, dulwich) ended in
   `dependency_file_not_resolvable`. "/" now leaves `build.in` and
   `build.txt` out, and a second pip entry updates them from
   `/requirements`, where Dependabot uses its newest Python. A docker
   entry keeps the server Dockerfile's base-image digest current.
+- Release build tooling: certifi 2026.10.23 and dulwich 1.2.19 in
+  `requirements/build.txt` (#144), compiled with uv `--universal` so
+  the platform markers Dependabot dropped are kept. Development: ruff
+  0.17.2 in `poetry.lock` (#145).
 
 ## [0.0.23] - 2026-10-20
 
@@ -688,7 +708,8 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Python 3.10+ support; depends on `camt053` (>=0.0.1) and `mcp` (>=1.2)
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
-[Unreleased]: https://github.com/sebastienrousseau/camt053-mcp/compare/v0.0.23...HEAD
+[Unreleased]: https://github.com/sebastienrousseau/camt053-mcp/compare/v0.0.24...HEAD
+[0.0.24]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.24
 [0.0.23]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.23
 [0.0.22]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.22
 [0.0.21]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.21

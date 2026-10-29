@@ -15,7 +15,7 @@ The examples import directly from `camt053_mcp.server`, so install this package
 (and the core `camt053` library it depends on) first:
 
 ```sh
-pip install camt053-mcp   # Python 3.10+
+pip install camt053-mcp   # Python 3.11+
 ```
 
 > While the core `camt053` library is not yet on PyPI, install it from source

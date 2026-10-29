@@ -4,9 +4,9 @@
 # `--no-deps`. Mirrors pyproject [tool.poetry.dependencies]; the image is
 # the core install, without the `otel` and `vector` extras.
 # Compiled to docker.txt with hashes via: make pip-compile
-camt053>=0.0.23,<1
-camt053-loader-mt940>=0.0.23
-camt053-loader-mt942>=0.0.23
+camt053>=0.0.24,<1
+camt053-loader-mt940>=0.0.24
+camt053-loader-mt942>=0.0.24
 # GHSA-84m7-p3x7-pcfv: mcp >=1.8.0,<1.30.0 and >=2.0.0,<2.2.0 are affected.
 mcp>=1.30.0,!=2.0.*,!=2.1.*,<3
 pyjwt[crypto]>=2.15.1,<3

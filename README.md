@@ -27,12 +27,11 @@ discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.24**: released with the camt053 suite 0.0.24
+> **Latest release: v0.0.25**: released with the camt053 suite 0.0.25
 > (core, loaders, writer, language server and this server on one
-> version). Requires Python 3.11 or newer, builds the container image
-> from hash-pinned packages only, and floors `opentelemetry-api` at
-> 1.45.1 (GHSA-xcq7-p3pf-p88h); 24 MCP tools over stdio, streamable
-> HTTP, SSE or authenticated streamable HTTP.
+> version). Takes pytest-asyncio 1.4.1 and the newer complexipy in the
+> development tools; 24 MCP tools over stdio, streamable HTTP, SSE or
+> authenticated streamable HTTP.
 
 ## Contents
 

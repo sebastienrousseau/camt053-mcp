@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.25] - 2026-10-29
+
+The camt053 suite's 0.0.25 release, core first. The suite moves
+together because camt053-mcp takes a development-tool update
+(Dependabot #147: pytest-asyncio 1.4.1, complexipy); the 24 MCP
+tools and their payloads are unchanged.
+
+### Changed
+
+- Requires `camt053 >= 0.0.25, < 1` in `pyproject.toml` and
+  `requirements/{docker,fuzz,lint,test}.in`, with both loaders at 0.0.25 too, and the hash-pinned
+  requirement files pin the published camt053 0.0.25.
+- Development: pytest-asyncio 1.4.1 in `poetry.lock` and complexipy
+  in `requirements/complexity.{in,txt}` and `poetry.lock` (#147).
+
 ## [0.0.24] - 2026-10-29
 
 ### Security
@@ -709,6 +724,7 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
 [Unreleased]: https://github.com/sebastienrousseau/camt053-mcp/compare/v0.0.24...HEAD
+[0.0.25]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.25
 [0.0.24]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.24
 [0.0.23]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.23
 [0.0.22]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.22

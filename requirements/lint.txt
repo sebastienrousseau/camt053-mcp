@@ -113,20 +113,20 @@ black==26.10.1 \
     --hash=sha256:fe85fc4019bee59bc495c0f2a8ee76c5cd02c7015508d94a967ba2376f39a52c \
     --hash=sha256:ff57f63029aa1353fa8b1b0c8971fd88a6c92dc766608d2eee33ad2deb23270e
     # via -r requirements/lint.in
-camt053==0.0.24 \
-    --hash=sha256:38328f1062fc239b6146f440432b69d4eedb1b86f196e417e83a7c39f4d58bf9 \
-    --hash=sha256:f9a353818ebdc6db7e8cb04c72ec73250f9a6a50697cc4e444dd28350a51e78d
+camt053==0.0.25 \
+    --hash=sha256:2b4167193f6b0fdbf5d3256142389145a72f2bf7f1420315e0fa5b23d8be90e1 \
+    --hash=sha256:c58527620cd37fd78e1cb3a003d694e004ccbf8dd91cd91e4356a255abf6d628
     # via
     #   -r requirements/lint.in
     #   camt053-loader-mt940
     #   camt053-loader-mt942
-camt053-loader-mt940==0.0.24 \
-    --hash=sha256:aaebd6a37b4282e5b88aaa6dc1439ddc13dd6bf54edc6ad5a1e5fe492f4e5151 \
-    --hash=sha256:e34e523b176b9fa24b957d4d30f89e3d393680871b933fb1480a1bbfd2e414c7
+camt053-loader-mt940==0.0.25 \
+    --hash=sha256:3c37fc196ecf8f1eec817f7b582ad19fe387e580b02cfda0489fc484f4a7feca \
+    --hash=sha256:95bdbadd49a3693defafb91eb5e828e51203c20500231c17ba9ffe20ef651dee
     # via -r requirements/lint.in
-camt053-loader-mt942==0.0.24 \
-    --hash=sha256:ae515be6c8678f0577cd1e2806ad9552c6475309946bfc9c5acc2acce6e0d2ef \
-    --hash=sha256:c9d5d8824803d00d9e51fee981d4c73a9a7148bbf666bb9f794f174b900385b6
+camt053-loader-mt942==0.0.25 \
+    --hash=sha256:8ecf4a56a63cc566ba246a5e7d9b60b7ec515f3b30fc4c33f391c45d0b229a04 \
+    --hash=sha256:d5f81f30436ec0fe37b57641f0d5b84eb670ace79109fd6d4a21496ab5e00f75
     # via -r requirements/lint.in
 certifi==2026.10.19 \
     --hash=sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae \

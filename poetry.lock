@@ -200,14 +200,14 @@ uvloop = ["uvloop (>=0.15.2) ; sys_platform != \"win32\"", "winloop (>=0.5.0) ; 
 
 [[package]]
 name = "camt053"
-version = "0.0.24"
+version = "0.0.25"
 description = "Camt053 is a Python library for reading ISO 20022 camt Bank-to-Customer Statements (camt.053/052/054) and generating validated reversing entries by return reason code (e.g. AC04 Closed Account)."
 optional = false
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 files = [
-    {file = "camt053-0.0.24-py3-none-any.whl", hash = "sha256:38328f1062fc239b6146f440432b69d4eedb1b86f196e417e83a7c39f4d58bf9"},
-    {file = "camt053-0.0.24.tar.gz", hash = "sha256:f9a353818ebdc6db7e8cb04c72ec73250f9a6a50697cc4e444dd28350a51e78d"},
+    {file = "camt053-0.0.25-py3-none-any.whl", hash = "sha256:c58527620cd37fd78e1cb3a003d694e004ccbf8dd91cd91e4356a255abf6d628"},
+    {file = "camt053-0.0.25.tar.gz", hash = "sha256:2b4167193f6b0fdbf5d3256142389145a72f2bf7f1420315e0fa5b23d8be90e1"},
 ]
 
 [package.dependencies]
@@ -239,36 +239,36 @@ telemetry = ["opentelemetry-api (>=1.20,<2)"]
 
 [[package]]
 name = "camt053-loader-mt940"
-version = "0.0.24"
+version = "0.0.25"
 description = "Convert legacy SWIFT MT940 bank statements to camt.053 ParsedDocument."
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "camt053_loader_mt940-0.0.24-py3-none-any.whl", hash = "sha256:e34e523b176b9fa24b957d4d30f89e3d393680871b933fb1480a1bbfd2e414c7"},
-    {file = "camt053_loader_mt940-0.0.24.tar.gz", hash = "sha256:aaebd6a37b4282e5b88aaa6dc1439ddc13dd6bf54edc6ad5a1e5fe492f4e5151"},
+    {file = "camt053_loader_mt940-0.0.25-py3-none-any.whl", hash = "sha256:3c37fc196ecf8f1eec817f7b582ad19fe387e580b02cfda0489fc484f4a7feca"},
+    {file = "camt053_loader_mt940-0.0.25.tar.gz", hash = "sha256:95bdbadd49a3693defafb91eb5e828e51203c20500231c17ba9ffe20ef651dee"},
 ]
 
 [package.dependencies]
-camt053 = ">=0.0.24,<1"
+camt053 = ">=0.0.25,<1"
 
 [package.extras]
 dev = ["complexipy (>=8.1)", "hypothesis (>=6.100)", "interrogate (>=1.7)", "mypy (>=1.11)", "packaging (>=23)", "pytest (>=8)", "pytest-cov (>=5)", "radon (>=6.0.1)", "ruff (>=0.6)"]
 
 [[package]]
 name = "camt053-loader-mt942"
-version = "0.0.24"
+version = "0.0.25"
 description = "Convert legacy SWIFT MT942 interim transaction reports to camt.052 ParsedDocument."
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "camt053_loader_mt942-0.0.24-py3-none-any.whl", hash = "sha256:c9d5d8824803d00d9e51fee981d4c73a9a7148bbf666bb9f794f174b900385b6"},
-    {file = "camt053_loader_mt942-0.0.24.tar.gz", hash = "sha256:ae515be6c8678f0577cd1e2806ad9552c6475309946bfc9c5acc2acce6e0d2ef"},
+    {file = "camt053_loader_mt942-0.0.25-py3-none-any.whl", hash = "sha256:8ecf4a56a63cc566ba246a5e7d9b60b7ec515f3b30fc4c33f391c45d0b229a04"},
+    {file = "camt053_loader_mt942-0.0.25.tar.gz", hash = "sha256:d5f81f30436ec0fe37b57641f0d5b84eb670ace79109fd6d4a21496ab5e00f75"},
 ]
 
 [package.dependencies]
-camt053 = ">=0.0.24,<1"
+camt053 = ">=0.0.25,<1"
 
 [package.extras]
 dev = ["complexipy (>=8.1)", "hypothesis (>=6.100)", "interrogate (>=1.7)", "mypy (>=1.11,<3)", "packaging (>=23.0)", "pytest (>=9.0.3,<10)", "pytest-cov (>=6.0.0,<8)", "radon (>=6.0)", "reuse (>=5.0)", "ruff (>=0.17,<0.18)"]
@@ -1952,14 +1952,14 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "requests
 
 [[package]]
 name = "pytest-asyncio"
-version = "1.4.0"
+version = "1.4.1"
 description = "Pytest support for asyncio"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "pytest_asyncio-1.4.0-py3-none-any.whl", hash = "sha256:933ca923a23075a87fb7070c0ec272a6848489824d887c85c812670932835aa1"},
-    {file = "pytest_asyncio-1.4.0.tar.gz", hash = "sha256:c6c0d2259945122819f171a32ecea2c349ead889ee28176caaf492143424be42"},
+    {file = "pytest_asyncio-1.4.1-py3-none-any.whl", hash = "sha256:507afa78ec77c6661164ef1a2368bc7820383fd1a14b2a7f813de8b5a92949cc"},
+    {file = "pytest_asyncio-1.4.1.tar.gz", hash = "sha256:e8266eb094e5ee9ffdb2068c9836f33e209ea77a970eb846933d416b5602669b"},
 ]
 
 [package.dependencies]
@@ -2867,4 +2867,4 @@ vector = ["sqlite-vec"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "b48763b1d3320ded7c4afcad8c3112a1dd2f62e4d7be0464d69bd480d7279ce4"
+content-hash = "e7126cb94c7c6559ef8d9dc66e2f6a7148a10919271cf452087d0a83f07c73b4"

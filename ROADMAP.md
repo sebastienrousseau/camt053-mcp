@@ -9,7 +9,7 @@ The Model Context Protocol (MCP) server for the
 bank-statement library — agent-first surface, no other ISO 20022 MCP
 server in the ecosystem matches its tool coverage.
 
-## Where we are (v0.0.24, with the camt053 suite 0.0.24)
+## Where we are (v0.0.25, with the camt053 suite 0.0.25)
 
 - **24 tools**:
   - Message-type discovery: `list_message_types`, `list_return_reasons`,

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.24] - 2026-10-27
+## [0.0.24] - 2026-10-29
 
 ### Security
 
@@ -47,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Released with the camt053 suite 0.0.24: `camt053`,
+  `camt053-loader-mt940` and `camt053-loader-mt942` are floored at
+  0.0.24 in `pyproject.toml` and `requirements/*.in`, and the container
+  image pins `camt053==0.0.24`.
 - Python 3.11 is the minimum supported version; 3.10 is dropped, in
   lockstep with the camt053 suite. Across the suite, the newest
   hypothesis release requires 3.11, so Dependabot could not resolve

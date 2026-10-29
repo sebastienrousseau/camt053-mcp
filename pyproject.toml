@@ -16,9 +16,9 @@ camt053-mcp = "camt053_mcp.server:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-camt053 = ">=0.0.23,<1"
-camt053-loader-mt940 = ">=0.0.23"
-camt053-loader-mt942 = ">=0.0.23"
+camt053 = ">=0.0.24,<1"
+camt053-loader-mt940 = ">=0.0.24"
+camt053-loader-mt942 = ">=0.0.24"
 # camt053_mcp._mcp_compat serves both the mcp 1.x FastMCP API and the
 # 2.x MCPServer API. GHSA-84m7-p3x7-pcfv affects mcp >=1.8.0,<1.30.0 and
 # >=2.0.0,<2.2.0, so both affected ranges are excluded: the floor is the

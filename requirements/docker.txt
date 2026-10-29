@@ -25,20 +25,20 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-camt053==0.0.23 \
-    --hash=sha256:390edeaba1c7915d1b7237c38ef47a3f1a540e714f1260cce6f9422491fd7f78 \
-    --hash=sha256:4f37f08cfb0d3febe5eedb92660a7ebe2087fd4c8baf5fa9808c4ad4f8cefc90
+camt053==0.0.24 \
+    --hash=sha256:38328f1062fc239b6146f440432b69d4eedb1b86f196e417e83a7c39f4d58bf9 \
+    --hash=sha256:f9a353818ebdc6db7e8cb04c72ec73250f9a6a50697cc4e444dd28350a51e78d
     # via
     #   -r requirements/docker.in
     #   camt053-loader-mt940
     #   camt053-loader-mt942
-camt053-loader-mt940==0.0.23 \
-    --hash=sha256:235b05b938832f3f70e9bd14e6919786f59c4e2e50fe25b36096b2d69df38718 \
-    --hash=sha256:983aea6e595c591f69846d9649aac9b793554bde059c3384dfdf5441f80efa73
+camt053-loader-mt940==0.0.24 \
+    --hash=sha256:aaebd6a37b4282e5b88aaa6dc1439ddc13dd6bf54edc6ad5a1e5fe492f4e5151 \
+    --hash=sha256:e34e523b176b9fa24b957d4d30f89e3d393680871b933fb1480a1bbfd2e414c7
     # via -r requirements/docker.in
-camt053-loader-mt942==0.0.23 \
-    --hash=sha256:5c522189b4a5b91c6caacc5d1641b5faa5edab0d6024d701be61775f24e23998 \
-    --hash=sha256:9a9414394ba88dbf6d9e05be91fc6b6145fac1b738ca1fd670bfa35288ba1a58
+camt053-loader-mt942==0.0.24 \
+    --hash=sha256:ae515be6c8678f0577cd1e2806ad9552c6475309946bfc9c5acc2acce6e0d2ef \
+    --hash=sha256:c9d5d8824803d00d9e51fee981d4c73a9a7148bbf666bb9f794f174b900385b6
     # via -r requirements/docker.in
 certifi==2026.10.23 \
     --hash=sha256:a9895e6e2758b371e0545e321a3a8fd1fcfd9829ada8824a936dfb16aaaf36cd \

@@ -7,7 +7,7 @@ twine
 dulwich>=1.2.21
 # virtualenv 21.14.9 to 21.14.12: GHSA-cx6f-vjhg-g3cc (the bash activator
 # leaves --prompt unescaped in PS1), fixed in 21.14.13.
-virtualenv>=21.15.5
+virtualenv>=21.15.6
 urllib3>=2.8.0
 # certifi: GHSA-6q48-6c7w-9gw2 (compromised emSign ECC Root CA - G3
 # intermediates), fixed in 2026.10.19.

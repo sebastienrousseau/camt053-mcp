@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.26] - Unreleased
+
+The camt053 suite's 0.0.26 release, core first. The 24 MCP tools and
+their payloads are unchanged. camt053 0.0.26 moves its REST stack into
+a `camt053[api]` extra; this server never imports `camt053.api`, so it
+keeps depending on plain `camt053`.
+
+### Changed
+
+- Declares `uvicorn >= 0.31.1, < 1`, `starlette >= 1.3.1, < 2` and
+  `pydantic >= 2.12.0, < 3`, which `camt053_mcp` imports directly but
+  received only through the MCP SDK; mirrored in
+  `requirements/{docker,test}.in`. Every resolved version stays the
+  same. `tests/test_declared_imports.py` fails when an imported
+  distribution is not declared.
+- `poetry.lock` drops 22 packages nothing depends on (cyclonedx-bom and
+  its tree), which the #151 fold had left in it.
+- Release SBOM tooling: cyclonedx-bom 8.0.1 in `requirements/sbom.txt`
+  (#154); the release's `cyclonedx-py environment` call is unchanged.
+- Development tools: pytest-asyncio 1.4.1.post1 (#156), ruff 0.17.4
+  (#157, after 0.17.3 from #151), complexipy 8.3.0 (#151), and build
+  floors dulwich 1.2.21, virtualenv 21.15.5 and filelock 4.2.9 (#155,
+  after #150).
+- CI: github/codeql-action 4.39.3 and sigstore/cosign-installer 4.1.3
+  (#153); a stable `<job> (all)` required check after each versioned
+  test matrix (#149).
+
 ## [0.0.25] - 2026-10-29
 
 The camt053 suite's 0.0.25 release, core first. The suite moves
@@ -724,6 +751,7 @@ Total tools: **13** (up from 11). Part of the v0.0.6 batch tracked in
 - Runnable example (`examples/mcp_tools.py`) invoking the tools in-process
 
 [Unreleased]: https://github.com/sebastienrousseau/camt053-mcp/compare/v0.0.24...HEAD
+[0.0.26]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.26
 [0.0.25]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.25
 [0.0.24]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.24
 [0.0.23]: https://github.com/sebastienrousseau/camt053-mcp/releases/tag/v0.0.23

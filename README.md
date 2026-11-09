@@ -27,11 +27,11 @@ discover message types and return reasons, inspect input schemas, validate
 records and financial identifiers, parse incoming statements, and generate
 validated reversing-entry XML, all from your favourite MCP client.
 
-> **Latest release: v0.0.25**: released with the camt053 suite 0.0.25
+> **Latest release: v0.0.26**: released with the camt053 suite 0.0.26
 > (core, loaders, writer, language server and this server on one
-> version). Takes pytest-asyncio 1.4.1 and the newer complexipy in the
-> development tools; 24 MCP tools over stdio, streamable HTTP, SSE or
-> authenticated streamable HTTP.
+> version). Declares uvicorn, starlette and pydantic, which it imports
+> directly, and takes the development-tool updates; 24 MCP tools over
+> stdio, streamable HTTP, SSE or authenticated streamable HTTP.
 
 ## Contents
 

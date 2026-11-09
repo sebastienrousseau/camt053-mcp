@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "camt053-mcp"
-version = "0.0.25"
+version = "0.0.26"
 description = "Model Context Protocol (MCP) server exposing the camt053 ISO 20022 Bank Statement library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0 OR MIT"
@@ -16,9 +16,9 @@ camt053-mcp = "camt053_mcp.server:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-camt053 = ">=0.0.25,<1"
-camt053-loader-mt940 = ">=0.0.25"
-camt053-loader-mt942 = ">=0.0.25"
+camt053 = ">=0.0.26,<1"
+camt053-loader-mt940 = ">=0.0.26"
+camt053-loader-mt942 = ">=0.0.26"
 # camt053_mcp._mcp_compat serves both the mcp 1.x FastMCP API and the
 # 2.x MCPServer API. GHSA-84m7-p3x7-pcfv affects mcp >=1.8.0,<1.30.0 and
 # >=2.0.0,<2.2.0, so both affected ranges are excluded: the floor is the
@@ -30,6 +30,17 @@ mcp = ">=1.30.0,!=2.0.*,!=2.1.*,<3"
 pyjwt = { version = ">=2.10,<3", extras = ["crypto"] }
 # Async JWKS fetching (also already transitive via the MCP SDK).
 httpx = ">=0.27,<1"
+# Imported directly, though the MCP SDK also requires them: the
+# streamable-HTTP transport (camt053_mcp.transport) runs uvicorn and
+# starlette, the OAuth and metrics middleware use starlette, and the tool
+# signatures use pydantic. The floors are what mcp needs (pydantic 2.12,
+# uvicorn 0.31.1) or the advisory floor camt053 uses (starlette 1.3.1:
+# GHSA-82w8-qh3p-5jfq, GHSA-86qp-5c8j-p5mr, GHSA-jp82-jpqv-5vv3), so the
+# lock resolves the same versions. tests/test_declared_imports.py fails
+# when an imported distribution is left to another package.
+pydantic = ">=2.12.0,<3"
+starlette = ">=1.3.1,<2"
+uvicorn = ">=0.31.1,<1"
 # Prometheus metrics on the MCP layer (camt053_mcp.observability).
 prometheus-client = ">=0.20,<2"
 # Transitive, via the MCP SDK (mcp 2.x requires opentelemetry-api):

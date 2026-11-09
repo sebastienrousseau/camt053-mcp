@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.26] - Unreleased
+## [0.0.26] - 2026-11-09
 
 The camt053 suite's 0.0.26 release, core first. The 24 MCP tools and
 their payloads are unchanged. camt053 0.0.26 moves its REST stack into
@@ -16,6 +16,13 @@ keeps depending on plain `camt053`.
 
 ### Changed
 
+- Requires `camt053`, `camt053-loader-mt940` and
+  `camt053-loader-mt942` 0.0.26 or newer (`pyproject.toml` and every
+  `requirements/*.in`); `poetry.lock` and the hash-pinned docker, fuzz,
+  lint and test sets move all three to 0.0.26. Those sets no longer
+  carry fastapi or uvicorn's `[standard]` extras (uvloop, httptools,
+  watchfiles, websockets, python-dotenv, pyyaml), which only camt053
+  0.0.25 brought; the server's own imports are declared.
 - Declares `uvicorn >= 0.31.1, < 1`, `starlette >= 1.3.1, < 2` and
   `pydantic >= 2.12.0, < 3`, which `camt053_mcp` imports directly but
   received only through the MCP SDK; mirrored in

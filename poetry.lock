@@ -2867,4 +2867,4 @@ vector = ["sqlite-vec"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "e7126cb94c7c6559ef8d9dc66e2f6a7148a10919271cf452087d0a83f07c73b4"
+content-hash = "8b50f39f3f7a69d97b8cd05e70627fd65e7ee72caf56d94fa27cfbd3d8f9768d"

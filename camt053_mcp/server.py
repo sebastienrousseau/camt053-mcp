@@ -851,9 +851,9 @@ def export_journal(
 def list_export_journal_targets() -> list[str]:
     """List the accounting-platform targets the ``export_journal`` tool supports.
 
-    Use this to tell a user which ``target`` values ``export_journal`` accepts
-    before invoking it. This lists export destinations only; for the LLM
-    classifier's category vocabulary use ``list_classify_entry_categories``.
+    Use this to inspect which ``target`` values ``export_journal`` accepts.
+    This lists export destinations only; for the LLM classifier's category
+    vocabulary use ``list_classify_entry_categories``.
 
     Returns the sorted list of valid ``target`` arguments accepted by
     ``export_journal`` (``["qbo", "xero"]`` today). NetSuite and SAP
@@ -934,7 +934,7 @@ def list_classify_entry_categories() -> list[str]:
 
     Operators can override the list per call; this tool exposes the
     default the prompt template ships with so an agent can quote them
-    to the user before invoking the classifier.
+    to the user alongside ``classify_entry``.
     """
     return list(classify.DEFAULT_CATEGORIES)
 
@@ -1060,9 +1060,9 @@ def filter_entries(
 ) -> list[dict] | dict[str, Any]:
     """List only the statement entries carrying a given return reason code.
 
-    Use this to preview exactly which entries a reversal would touch before
-    calling ``generate_reversal`` with the same ``reason_code``. For every entry
-    regardless of reason code use ``list_entries`` instead.
+    Use this to preview the exact entries matching a ``reason_code`` that
+    ``generate_reversal`` reverses. For every entry regardless of reason code
+    use ``list_entries`` instead.
 
     When ``limit`` is ``None`` (the default) the full list of matching entries
     is returned, preserving the behaviour expected by existing callers. When

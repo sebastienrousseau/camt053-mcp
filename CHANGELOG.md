@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Reworded cross-tool sequencing imperatives in `list_export_journal_targets`,
+  `list_classify_entry_categories`, and `filter_entries` into declarative
+  scope descriptions so every MCP tool governs only itself and clears
+  `passmcp` `catalog.text.shadowing` checks.
+
 ## [0.0.26] - 2026-11-09
 
 The camt053 suite's 0.0.26 release, core first. The 24 MCP tools and

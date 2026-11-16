@@ -14,4 +14,4 @@ urllib3>=2.8.0
 certifi>=2026.10.23
 # filelock <= 4.2.0: GHSA-9vhv-jxww-xfm5, GHSA-567q-5qvw-pf92 and
 # GHSA-v4x8-3wr5-3wq8; 4.2.1 needs Python 3.11, hence the 3.12 compile.
-filelock>=4.2.9
+filelock>=4.2.10
